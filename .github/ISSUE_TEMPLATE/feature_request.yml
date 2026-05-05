@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a useful improvement for Ruleloom Lab
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or learning goal
+      description: What would this help you understand or create?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful version of the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional context, examples, or tradeoffs.

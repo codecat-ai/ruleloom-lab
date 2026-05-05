@@ -1,0 +1,27 @@
+{
+  "name": "ruleloom-lab",
+  "version": "0.1.0",
+  "description": "A local-first elementary cellular automata playground for learning and creative exploration.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3",
+    "vite": "^7.2.2",
+    "vitest": "^4.0.8"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,180 @@
+:root {
+  color: #1f2933;
+  background: #f5f7f2;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.shell {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.intro {
+  align-items: end;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin: 0 auto 24px;
+  max-width: 1180px;
+}
+
+.eyebrow {
+  color: #5a6b3f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(2.25rem, 6vw, 5rem);
+  line-height: 0.95;
+  margin: 0;
+}
+
+.lede {
+  color: #52606d;
+  max-width: 620px;
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: end;
+}
+
+.status span,
+.actions button {
+  background: #ffffff;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.controls,
+.actions,
+.layout {
+  margin: 0 auto 18px;
+  max-width: 1180px;
+}
+
+.controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+label {
+  color: #3e4c59;
+  display: grid;
+  font-size: 0.84rem;
+  gap: 6px;
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+input,
+select {
+  background: #ffffff;
+  border: 1px solid #b8c4ce;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actions button {
+  cursor: pointer;
+}
+
+.actions button:hover {
+  border-color: #5a6b3f;
+}
+
+.layout {
+  display: grid;
+  gap: 18px;
+}
+
+.rule-table {
+  border-collapse: collapse;
+  overflow: hidden;
+  width: 100%;
+}
+
+.rule-table th,
+.rule-table td {
+  background: #ffffff;
+  border: 1px solid #cbd2d9;
+  padding: 10px;
+  text-align: center;
+}
+
+.grid-wrap {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  overflow: auto;
+  padding: 16px;
+}
+
+.automaton-grid {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(var(--cells), minmax(5px, 1fr));
+  min-width: min(980px, calc(var(--cells) * 8px));
+}
+
+.cell {
+  aspect-ratio: 1;
+  background: #eef2f5;
+  border-radius: 1px;
+  min-width: 5px;
+}
+
+.cell.alive {
+  background: #1f2933;
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 18px;
+  }
+
+  .intro {
+    align-items: start;
+    display: grid;
+  }
+
+  .status {
+    justify-content: start;
+  }
+
+  .wide {
+    grid-column: auto;
+  }
+}

@@ -17,9 +17,11 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Accessible HTML/CSS automata grid.
 - Rule table for neighborhoods from `111` to `000`.
 - Step, reset, run, and share controls.
+- Copy SVG action for standalone pattern snapshots.
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184.
 - Pure deterministic engine exported from `src/automata.ts`.
 - Query-string import and export helpers in `src/share.ts`.
+- Deterministic SVG pattern exporter in `src/svgExport.ts`.
 
 ## Installation
 
@@ -76,7 +78,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, generation, deterministic seeds, URL query helpers, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, generation, deterministic seeds, URL query helpers, SVG export, clipboard copy behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -84,7 +86,7 @@ npm test -- --run
 
 ## Roadmap
 
-- Export SVG or PNG pattern snapshots.
+- Export PNG pattern snapshots.
 - Add explanatory annotations for each preset.
 - Add side-by-side rule comparison.
 - Add keyboard shortcuts for stepping and preset selection.

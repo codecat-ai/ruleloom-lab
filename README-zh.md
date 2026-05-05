@@ -1,5 +1,8 @@
 # Ruleloom Lab
 
+[English](README.md) | [中文](README-zh.md) | [日本語](README-jp.md)
+
+
 Ruleloom Lab 是一个本地优先的浏览器初等元胞自动机游乐场：输入 Wolfram 规则编号，选择种子，然后观察微小的邻域规则如何编织出令人惊讶的视觉图案。
 
 ## 问题与动机

@@ -1,5 +1,8 @@
 # Ruleloom Lab
 
+[English](README.md) | [中文](README-zh.md) | [日本語](README-jp.md)
+
+
 Ruleloom Lab はローカルファーストのブラウザー向け初等セル・オートマトン playground です。Wolfram ルール番号を入力し、シードを選ぶだけで、小さな近傍ルールが驚くような視覚パターンを編み出す様子を観察できます。
 
 ## 問題と動機

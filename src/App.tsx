@@ -9,6 +9,7 @@ import {
   MIN_WIDTH
 } from "./automata";
 import { DEFAULT_SETTINGS, parseSettingsQuery, serializeSettingsQuery } from "./share";
+import { exportPatternSvg } from "./svgExport";
 import "./App.css";
 
 const PRESETS = [
@@ -74,6 +75,7 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
         <button type="button" data-action="reset">Reset</button>
         <button type="button" data-action="run">Run</button>
         <button type="button" data-action="share">Copy share URL</button>
+        <button type="button" data-action="copy-svg">Copy SVG</button>
       </section>
 
       <section class="layout">
@@ -152,6 +154,12 @@ export function mountApp(root: HTMLElement): void {
       const url = `${location.origin}${location.pathname}${serializeSettingsQuery(settings)}`;
       await navigator.clipboard?.writeText(url);
     });
+
+    root.querySelector<HTMLButtonElement>("[data-action='copy-svg']")?.addEventListener("click", async () => {
+      await copySvgForSettings(settings, visibleGenerations, (svg) => {
+        return navigator.clipboard?.writeText(svg) ?? Promise.resolve();
+      });
+    });
   };
 
   const stop = () => {
@@ -162,6 +170,15 @@ export function mountApp(root: HTMLElement): void {
   };
 
   render();
+}
+
+export async function copySvgForSettings(
+  settings: AutomatonSettings,
+  visibleGenerations: number,
+  writeText: (value: string) => Promise<void>
+): Promise<void> {
+  const svg = exportPatternSvg({ ...settings, generations: visibleGenerations });
+  await writeText(svg);
 }
 
 function readSettings(root: HTMLElement, fallback: AutomatonSettings): AutomatonSettings {

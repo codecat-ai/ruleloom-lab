@@ -17,7 +17,7 @@ npm run build
 - Keep changes focused on one behavior or documentation topic.
 - Add or update tests before changing production code when behavior changes.
 - Use English for code comments, commit messages, and issue templates.
-- Keep `README.md`, `README-zh.md`, and `README-jp.md` synchronized in meaning.
+- Keep `README.md`, `README-zh.md`, and `README-ja.md` synchronized in meaning.
 - Do not add external services, analytics, or server dependencies without prior discussion.
 
 ## Commit Style

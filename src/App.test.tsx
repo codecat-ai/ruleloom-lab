@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { copySvgForSettings, createAppHtml, getPresetExplanations } from "./App";
+import { copySvgForSettings, createAppHtml, getPresetExplanations, resolveKeyboardShortcut } from "./App";
 
 describe("App", () => {
   it("returns preset explanation metadata in stable curated order", () => {
@@ -43,6 +43,36 @@ describe("App", () => {
     expect(html).toContain('<select id="boundaryMode"');
     expect(html).toContain("Fixed zero edges");
     expect(html).toContain("Wrapped circular edges");
+  });
+
+  it("renders discoverable keyboard shortcut guidance", () => {
+    const html = createAppHtml();
+
+    expect(html).toContain("Keyboard shortcuts");
+    expect(html).toContain("Space: Run/Pause");
+    expect(html).toContain("ArrowRight or .: Step");
+    expect(html).toContain("R: Reset");
+    expect(html).toContain("1-4: Presets");
+  });
+
+  it("maps keyboard shortcuts to deterministic actions", () => {
+    expect(resolveKeyboardShortcut({ key: " " })).toEqual({ type: "toggleRun" });
+    expect(resolveKeyboardShortcut({ key: "ArrowRight" })).toEqual({ type: "step" });
+    expect(resolveKeyboardShortcut({ key: "." })).toEqual({ type: "step" });
+    expect(resolveKeyboardShortcut({ key: "r" })).toEqual({ type: "reset" });
+    expect(resolveKeyboardShortcut({ key: "R" })).toEqual({ type: "reset" });
+    expect(resolveKeyboardShortcut({ key: "1" })).toEqual({ type: "preset", rule: 30 });
+    expect(resolveKeyboardShortcut({ key: "2" })).toEqual({ type: "preset", rule: 90 });
+    expect(resolveKeyboardShortcut({ key: "3" })).toEqual({ type: "preset", rule: 110 });
+    expect(resolveKeyboardShortcut({ key: "4" })).toEqual({ type: "preset", rule: 184 });
+    expect(resolveKeyboardShortcut({ key: "5" })).toBeUndefined();
+  });
+
+  it("does not resolve shortcuts while typing in form controls", () => {
+    for (const tagName of ["input", "select", "textarea", "button"]) {
+      expect(resolveKeyboardShortcut({ key: " ", targetTagName: tagName })).toBeUndefined();
+      expect(resolveKeyboardShortcut({ key: "1", targetTagName: tagName })).toBeUndefined();
+    }
   });
 
   it("renders boundary mode status readback", () => {

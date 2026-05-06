@@ -35,8 +35,42 @@ const PRESETS = [
   }
 ] as const;
 
+export type KeyboardShortcutAction =
+  | { type: "toggleRun" }
+  | { type: "step" }
+  | { type: "reset" }
+  | { type: "preset"; rule: number };
+
+interface KeyboardShortcutInput {
+  key: string;
+  targetTagName?: string;
+  targetIsContentEditable?: boolean;
+}
+
 export function getPresetExplanations(): Array<(typeof PRESETS)[number]> {
   return [...PRESETS];
+}
+
+export function resolveKeyboardShortcut(input: KeyboardShortcutInput): KeyboardShortcutAction | undefined {
+  if (isFormControlTarget(input)) {
+    return undefined;
+  }
+
+  if (input.key === " ") {
+    return { type: "toggleRun" };
+  }
+
+  if (input.key === "ArrowRight" || input.key === ".") {
+    return { type: "step" };
+  }
+
+  if (input.key.toLowerCase() === "r") {
+    return { type: "reset" };
+  }
+
+  const presetIndex = Number(input.key) - 1;
+  const preset = PRESETS[presetIndex];
+  return preset ? { type: "preset", rule: preset.rule } : undefined;
 }
 
 export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): string {
@@ -104,6 +138,7 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
         <button type="button" data-action="run">Run</button>
         <button type="button" data-action="share">Copy share URL</button>
         <button type="button" data-action="copy-svg">Copy SVG</button>
+        <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
       </section>
 
       <section class="preset-explanations" aria-label="Preset explanations">
@@ -147,6 +182,59 @@ export function mountApp(root: HTMLElement): void {
     render();
   };
 
+  const applyPreset = (rule: number) => {
+    settings = { ...settings, rule };
+    history.replaceState(null, "", serializeSettingsQuery(settings));
+    render();
+  };
+
+  const step = () => {
+    visibleGenerations = Math.min(MAX_GENERATIONS, visibleGenerations + 1);
+    render();
+  };
+
+  const reset = () => {
+    stop();
+    visibleGenerations = 1;
+    render();
+  };
+
+  const toggleRun = () => {
+    if (timer !== undefined) {
+      stop();
+      return;
+    }
+
+    timer = globalThis.setInterval(() => {
+      visibleGenerations = visibleGenerations >= settings.generations ? 1 : visibleGenerations + 1;
+      render();
+    }, 180);
+  };
+
+  const handleKeydown = (event: KeyboardEvent) => {
+    const shortcut = resolveKeyboardShortcut({
+      key: event.key,
+      targetTagName: readTargetTagName(event.target),
+      targetIsContentEditable: readTargetIsContentEditable(event.target)
+    });
+
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (shortcut.type === "toggleRun") {
+      toggleRun();
+    } else if (shortcut.type === "step") {
+      step();
+    } else if (shortcut.type === "reset") {
+      reset();
+    } else {
+      applyPreset(shortcut.rule);
+    }
+  };
+
   const bindEvents = () => {
     root.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select").forEach((control) => {
       control.addEventListener("change", updateFromControls);
@@ -154,33 +242,15 @@ export function mountApp(root: HTMLElement): void {
 
     root.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach((button) => {
       button.addEventListener("click", () => {
-        settings = { ...settings, rule: Number(button.dataset.preset) };
-        history.replaceState(null, "", serializeSettingsQuery(settings));
-        render();
+        applyPreset(Number(button.dataset.preset));
       });
     });
 
-    root.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", () => {
-      visibleGenerations = Math.min(MAX_GENERATIONS, visibleGenerations + 1);
-      render();
-    });
+    root.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", step);
 
-    root.querySelector<HTMLButtonElement>("[data-action='reset']")?.addEventListener("click", () => {
-      stop();
-      visibleGenerations = 1;
-      render();
-    });
+    root.querySelector<HTMLButtonElement>("[data-action='reset']")?.addEventListener("click", reset);
 
-    root.querySelector<HTMLButtonElement>("[data-action='run']")?.addEventListener("click", () => {
-      if (timer !== undefined) {
-        stop();
-        return;
-      }
-      timer = globalThis.setInterval(() => {
-        visibleGenerations = visibleGenerations >= settings.generations ? 1 : visibleGenerations + 1;
-        render();
-      }, 180);
-    });
+    root.querySelector<HTMLButtonElement>("[data-action='run']")?.addEventListener("click", toggleRun);
 
     root.querySelector<HTMLButtonElement>("[data-action='share']")?.addEventListener("click", async () => {
       const url = `${location.origin}${location.pathname}${serializeSettingsQuery(settings)}`;
@@ -201,6 +271,7 @@ export function mountApp(root: HTMLElement): void {
     }
   };
 
+  globalThis.addEventListener("keydown", handleKeydown);
   render();
 }
 
@@ -241,4 +312,19 @@ function boundaryModeLabel(boundaryMode: AutomatonSettings["boundaryMode"]): str
 
 function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function isFormControlTarget(input: KeyboardShortcutInput): boolean {
+  const tagName = input.targetTagName?.toLowerCase();
+  return input.targetIsContentEditable === true || ["button", "input", "select", "textarea"].includes(tagName ?? "");
+}
+
+function readTargetTagName(target: EventTarget | null): string | undefined {
+  const maybeElement = target as { tagName?: unknown } | null;
+  return typeof maybeElement?.tagName === "string" ? maybeElement.tagName : undefined;
+}
+
+function readTargetIsContentEditable(target: EventTarget | null): boolean {
+  const maybeElement = target as { isContentEditable?: unknown } | null;
+  return maybeElement?.isContentEditable === true;
 }

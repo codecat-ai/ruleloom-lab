@@ -18,6 +18,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Accessible HTML/CSS automata grid.
 - Rule table for neighborhoods from `111` to `000`.
 - Step, reset, run, and share controls.
+- Keyboard shortcuts: Space toggles Run/Pause, ArrowRight or `.` steps, `R` resets, and number keys `1`-`4` choose the visible presets.
 - Copy SVG action for standalone pattern snapshots.
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
 - Pure deterministic engine exported from `src/automata.ts`.
@@ -43,6 +44,8 @@ npm run dev
 Open the printed local URL in a browser.
 
 Use the Boundary control to compare the default fixed-zero edges with wrapped circular edges without changing the rule or seed.
+
+Use keyboard shortcuts when focus is not inside a form control: Space for Run/Pause, ArrowRight or `.` for Step, `R` for Reset, and `1`-`4` for Rule 30, Rule 90, Rule 110, and Rule 184 in visible preset order.
 
 ## Examples
 
@@ -84,7 +87,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, URL query helpers, preset explanations, SVG export, clipboard copy behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, URL query helpers, preset explanations, keyboard shortcuts, SVG export, clipboard copy behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -94,7 +97,6 @@ npm test -- --run
 
 - Export PNG pattern snapshots.
 - Add side-by-side rule comparison.
-- Add keyboard shortcuts for stepping and preset selection.
 - Add shareable gallery examples in documentation.
 
 ## Contributing

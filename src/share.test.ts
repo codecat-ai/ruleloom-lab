@@ -18,10 +18,29 @@ describe("share helpers", () => {
       generations: 80,
       seedMode: "random" as const,
       randomSeed: 12345,
-      customSeed: "10101"
+      customSeed: "10101",
+      boundaryMode: "wrap" as const
     };
 
     expect(parseSettingsQuery(serializeSettingsQuery(settings))).toEqual(settings);
+  });
+
+  it("parses invalid boundary mode values back to fixed", () => {
+    expect(parseSettingsQuery("?rule=90&width=61&steps=80&boundary=torus")).toMatchObject({
+      boundaryMode: "fixed"
+    });
+  });
+
+  it("serializes fixed boundary mode for share URL compatibility", () => {
+    expect(
+      serializeSettingsQuery({
+        rule: 90,
+        width: 61,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "fixed"
+      })
+    ).toContain("boundary=fixed");
   });
 
   it("restores documented settings query", () => {
@@ -29,7 +48,8 @@ describe("share helpers", () => {
       rule: 90,
       width: 61,
       generations: 80,
-      seedMode: "center"
+      seedMode: "center",
+      boundaryMode: "fixed"
     });
   });
 });

@@ -40,6 +40,22 @@ describe("App", () => {
     expect(html).toContain("role=\"gridcell\"");
     expect(html).toContain("data-action=\"copy-svg\"");
     expect(html).toContain("Copy SVG");
+    expect(html).toContain('<select id="boundaryMode"');
+    expect(html).toContain("Fixed zero edges");
+    expect(html).toContain("Wrapped circular edges");
+  });
+
+  it("renders boundary mode status readback", () => {
+    const html = createAppHtml({
+      rule: 30,
+      width: 15,
+      generations: 5,
+      seedMode: "center",
+      boundaryMode: "wrap"
+    });
+
+    expect(html).toContain("Wrapped edges");
+    expect(html).toContain('<option value="wrap" selected>Wrapped circular edges</option>');
   });
 
   it("renders preset explanations near the preset controls", () => {

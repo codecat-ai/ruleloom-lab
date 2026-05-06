@@ -14,6 +14,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Rule number input from 0 to 255.
 - Width, generation count, and seed controls with predictable clamping.
 - Center, deterministic random, and custom bit-string seed modes.
+- Boundary mode control for comparing fixed-zero edges with wrapped circular edges.
 - Accessible HTML/CSS automata grid.
 - Rule table for neighborhoods from `111` to `000`.
 - Step, reset, run, and share controls.
@@ -41,15 +42,19 @@ npm run dev
 
 Open the printed local URL in a browser.
 
+Use the Boundary control to compare the default fixed-zero edges with wrapped circular edges without changing the rule or seed.
+
 ## Examples
 
 Restore a deterministic Rule 90 exploration from a URL query string:
 
 ```text
-?rule=90&width=61&steps=80&seed=center
+?rule=90&width=61&steps=80&seed=center&boundary=fixed
 ```
 
 Try the Rule 30 preset for chaotic pseudo-random growth, Rule 90 for nested Sierpinski triangles, Rule 110 for computationally universal behavior, or Rule 184 for traffic-flow movement. The app shows these explanations next to the preset controls.
+
+Switch `boundary=wrap` in a share URL to make the left and right edges read each other as neighbors.
 
 ## Configuration
 
@@ -59,10 +64,11 @@ The app is configured in the browser UI or with URL query parameters:
 - `width`: grid width, clamped from 15 to 121 cells.
 - `steps`: displayed generations, clamped from 1 to 160 rows.
 - `seed`: `center`, `random`, or `custom`.
+- `boundary`: `fixed` for zero-valued outer neighbors or `wrap` for circular edge neighbors. Invalid values fall back to `fixed`.
 - `randomSeed`: deterministic numeric random seed.
 - `customSeed`: bit string used when `seed=custom`.
 
-Invalid numeric values are clamped to the supported ranges.
+Invalid numeric values are clamped to the supported ranges. Missing boundary settings use `fixed` for backward compatibility.
 
 ## Development
 
@@ -78,7 +84,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, generation, deterministic seeds, URL query helpers, preset explanations, SVG export, clipboard copy behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, URL query helpers, preset explanations, SVG export, clipboard copy behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run

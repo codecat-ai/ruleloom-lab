@@ -55,6 +55,7 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
           <span>Rule ${settings.rule}</span>
           <span>${settings.width} cells</span>
           <span>${settings.generations} rows</span>
+          <span>${boundaryModeLabel(settings.boundaryMode)}</span>
         </div>
       </section>
 
@@ -77,6 +78,13 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
             ${selectOption("center", "Center", settings.seedMode)}
             ${selectOption("random", "Deterministic random", settings.seedMode)}
             ${selectOption("custom", "Custom bits", settings.seedMode)}
+          </select>
+        </label>
+        <label>
+          Boundary
+          <select id="boundaryMode">
+            ${selectOption("fixed", "Fixed zero edges", settings.boundaryMode ?? "fixed")}
+            ${selectOption("wrap", "Wrapped circular edges", settings.boundaryMode ?? "fixed")}
           </select>
         </label>
         <label>
@@ -211,6 +219,7 @@ function readSettings(root: HTMLElement, fallback: AutomatonSettings): Automaton
     width: readNumber(root, "#width", fallback.width),
     generations: readNumber(root, "#generations", fallback.generations),
     seedMode: root.querySelector<HTMLSelectElement>("#seedMode")?.value as AutomatonSettings["seedMode"],
+    boundaryMode: root.querySelector<HTMLSelectElement>("#boundaryMode")?.value as AutomatonSettings["boundaryMode"],
     randomSeed: readNumber(root, "#randomSeed", fallback.randomSeed ?? 1),
     customSeed: root.querySelector<HTMLInputElement>("#customSeed")?.value ?? fallback.customSeed
   };
@@ -224,6 +233,10 @@ function readNumber(root: HTMLElement, selector: string, fallback: number): numb
 
 function selectOption(value: string, label: string, selected: string): string {
   return `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`;
+}
+
+function boundaryModeLabel(boundaryMode: AutomatonSettings["boundaryMode"]): string {
+  return boundaryMode === "wrap" ? "Wrapped edges" : "Fixed zero edges";
 }
 
 function escapeHtml(value: string): string {

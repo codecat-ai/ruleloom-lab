@@ -1,5 +1,6 @@
 export type Bit = 0 | 1;
 export type SeedMode = "center" | "random" | "custom";
+export type BoundaryMode = "fixed" | "wrap";
 
 export type RuleTable = Record<string, Bit>;
 
@@ -8,6 +9,7 @@ export interface AutomatonSettings {
   width: number;
   generations: number;
   seedMode: SeedMode;
+  boundaryMode?: BoundaryMode;
   randomSeed?: number;
   customSeed?: string;
 }
@@ -35,12 +37,14 @@ export function clamp(value: number, min: number, max: number): number {
 
 export function clampSettings(settings: AutomatonSettings): AutomatonSettings {
   const seedMode = isSeedMode(settings.seedMode) ? settings.seedMode : "center";
+  const boundaryMode = isBoundaryMode(settings.boundaryMode) ? settings.boundaryMode : "fixed";
 
   return {
     rule: clamp(settings.rule, 0, 255),
     width: clamp(settings.width, MIN_WIDTH, MAX_WIDTH),
     generations: clamp(settings.generations, MIN_GENERATIONS, MAX_GENERATIONS),
     seedMode,
+    boundaryMode,
     randomSeed: settings.randomSeed,
     customSeed: settings.customSeed
   };
@@ -56,11 +60,11 @@ export function decodeRule(rule: number): RuleTable {
   ) as RuleTable;
 }
 
-export function nextGeneration(row: Bit[], ruleTable: RuleTable): Bit[] {
+export function nextGeneration(row: Bit[], ruleTable: RuleTable, boundaryMode: BoundaryMode = "fixed"): Bit[] {
   return row.map((_, index) => {
-    const left = row[index - 1] ?? 0;
+    const left = boundaryMode === "wrap" ? row[(index - 1 + row.length) % row.length] : (row[index - 1] ?? 0);
     const center = row[index] ?? 0;
-    const right = row[index + 1] ?? 0;
+    const right = boundaryMode === "wrap" ? row[(index + 1) % row.length] : (row[index + 1] ?? 0);
     return ruleTable[`${left}${center}${right}`] ?? 0;
   });
 }
@@ -93,7 +97,7 @@ export function generateAutomaton(settings: AutomatonSettings): Bit[][] {
   ];
 
   while (rows.length < normalized.generations) {
-    rows.push(nextGeneration(rows[rows.length - 1], ruleTable));
+    rows.push(nextGeneration(rows[rows.length - 1], ruleTable, normalized.boundaryMode));
   }
 
   return rows;
@@ -105,6 +109,10 @@ export function neighborhoods(): readonly string[] {
 
 function isSeedMode(value: string): value is SeedMode {
   return value === "center" || value === "random" || value === "custom";
+}
+
+function isBoundaryMode(value: string | undefined): value is BoundaryMode {
+  return value === "fixed" || value === "wrap";
 }
 
 function mulberry32(seed: number): () => number {

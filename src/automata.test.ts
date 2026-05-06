@@ -25,6 +25,27 @@ describe("automata engine", () => {
     expect(nextGeneration([1, 0, 0], decodeRule(30))).toEqual([1, 1, 0]);
   });
 
+  it("can wrap boundary cells for the next generation", () => {
+    expect(nextGeneration([1, 0, 0], decodeRule(30), "wrap")).toEqual([1, 1, 1]);
+  });
+
+  it("generates wrapped rows when boundary mode is wrap", () => {
+    expect(
+      generateAutomaton({
+        rule: 30,
+        width: 15,
+        generations: 3,
+        seedMode: "custom",
+        customSeed: "100000000000000",
+        boundaryMode: "wrap"
+      })
+    ).toEqual([
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1]
+    ]);
+  });
+
   it("generates known first rows for rule 30 from a center seed", () => {
     expect(
       generateAutomaton({
@@ -76,8 +97,9 @@ describe("automata engine", () => {
         rule: 300,
         width: 200,
         generations: -10,
-        seedMode: "center"
+        seedMode: "center",
+        boundaryMode: "invalid" as never
       })
-    ).toMatchObject({ rule: 255, width: 121, generations: 1 });
+    ).toMatchObject({ rule: 255, width: 121, generations: 1, boundaryMode: "fixed" });
   });
 });

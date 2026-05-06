@@ -1,7 +1,32 @@
 import { describe, expect, it, vi } from "vitest";
-import { copySvgForSettings, createAppHtml } from "./App";
+import { copySvgForSettings, createAppHtml, getPresetExplanations } from "./App";
 
 describe("App", () => {
+  it("returns preset explanation metadata in stable curated order", () => {
+    expect(getPresetExplanations()).toEqual([
+      {
+        label: "Rule 30",
+        rule: 30,
+        explanation: "Chaotic, pseudo-random growth from a simple deterministic rule."
+      },
+      {
+        label: "Rule 90",
+        rule: 90,
+        explanation: "Creates nested Sierpinski triangles that reveal self-similarity."
+      },
+      {
+        label: "Rule 110",
+        rule: 110,
+        explanation: "Computationally universal behavior with persistent moving structures."
+      },
+      {
+        label: "Rule 184",
+        rule: 184,
+        explanation: "Models traffic flow as particles moving through local gaps."
+      }
+    ]);
+  });
+
   it("renders the core playground UI", () => {
     const html = createAppHtml();
 
@@ -15,6 +40,20 @@ describe("App", () => {
     expect(html).toContain("role=\"gridcell\"");
     expect(html).toContain("data-action=\"copy-svg\"");
     expect(html).toContain("Copy SVG");
+  });
+
+  it("renders preset explanations near the preset controls", () => {
+    const html = createAppHtml();
+
+    expect(html).toContain('class="preset-explanations"');
+    for (const preset of getPresetExplanations()) {
+      expect(html).toContain(`data-preset-explanation="${preset.rule}"`);
+      expect(html).toContain(`<strong>${preset.label}</strong>`);
+      expect(html).toContain(preset.explanation);
+      expect(html.indexOf(`data-preset="${preset.rule}"`)).toBeLessThan(
+        html.indexOf(`data-preset-explanation="${preset.rule}"`)
+      );
+    }
   });
 
   it("shows rule table neighborhoods from 111 to 000", () => {

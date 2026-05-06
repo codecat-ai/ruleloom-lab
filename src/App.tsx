@@ -13,11 +13,31 @@ import { exportPatternSvg } from "./svgExport";
 import "./App.css";
 
 const PRESETS = [
-  { label: "Rule 30", rule: 30 },
-  { label: "Rule 90", rule: 90 },
-  { label: "Rule 110", rule: 110 },
-  { label: "Rule 184", rule: 184 }
+  {
+    label: "Rule 30",
+    rule: 30,
+    explanation: "Chaotic, pseudo-random growth from a simple deterministic rule."
+  },
+  {
+    label: "Rule 90",
+    rule: 90,
+    explanation: "Creates nested Sierpinski triangles that reveal self-similarity."
+  },
+  {
+    label: "Rule 110",
+    rule: 110,
+    explanation: "Computationally universal behavior with persistent moving structures."
+  },
+  {
+    label: "Rule 184",
+    rule: 184,
+    explanation: "Models traffic flow as particles moving through local gaps."
+  }
 ] as const;
+
+export function getPresetExplanations(): Array<(typeof PRESETS)[number]> {
+  return [...PRESETS];
+}
 
 export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): string {
   const rows = generateAutomaton(settings);
@@ -76,6 +96,10 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
         <button type="button" data-action="run">Run</button>
         <button type="button" data-action="share">Copy share URL</button>
         <button type="button" data-action="copy-svg">Copy SVG</button>
+      </section>
+
+      <section class="preset-explanations" aria-label="Preset explanations">
+        ${PRESETS.map((preset) => `<article data-preset-explanation="${preset.rule}"><strong>${preset.label}</strong><span>${preset.explanation}</span></article>`).join("")}
       </section>
 
       <section class="layout">

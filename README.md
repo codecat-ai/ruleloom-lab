@@ -18,7 +18,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Rule table for neighborhoods from `111` to `000`.
 - Step, reset, run, and share controls.
 - Copy SVG action for standalone pattern snapshots.
-- Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184.
+- Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
 - Pure deterministic engine exported from `src/automata.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
@@ -49,7 +49,7 @@ Restore a deterministic Rule 90 exploration from a URL query string:
 ?rule=90&width=61&steps=80&seed=center
 ```
 
-Try the Rule 30 preset for chaotic-looking growth, Rule 90 for a Sierpinski-style triangle, Rule 110 for complex behavior, or Rule 184 for traffic-like movement.
+Try the Rule 30 preset for chaotic pseudo-random growth, Rule 90 for nested Sierpinski triangles, Rule 110 for computationally universal behavior, or Rule 184 for traffic-flow movement. The app shows these explanations next to the preset controls.
 
 ## Configuration
 
@@ -78,7 +78,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, generation, deterministic seeds, URL query helpers, SVG export, clipboard copy behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, generation, deterministic seeds, URL query helpers, preset explanations, SVG export, clipboard copy behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -87,7 +87,6 @@ npm test -- --run
 ## Roadmap
 
 - Export PNG pattern snapshots.
-- Add explanatory annotations for each preset.
 - Add side-by-side rule comparison.
 - Add keyboard shortcuts for stepping and preset selection.
 - Add shareable gallery examples in documentation.

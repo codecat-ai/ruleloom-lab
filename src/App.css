@@ -70,6 +70,7 @@ h1 {
 
 .controls,
 .actions,
+.preset-explanations,
 .layout {
   margin: 0 auto 18px;
   max-width: 1180px;
@@ -113,6 +114,31 @@ select {
 
 .actions button:hover {
   border-color: #5a6b3f;
+}
+
+.preset-explanations {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.preset-explanations article {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.preset-explanations strong {
+  color: #1f2933;
+}
+
+.preset-explanations span {
+  color: #52606d;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .layout {

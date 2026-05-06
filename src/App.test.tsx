@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { copySvgForSettings, createAppHtml, getPresetExplanations, resolveKeyboardShortcut } from "./App";
+import {
+  copySvgForSettings,
+  copyTextForSettings,
+  createAppHtml,
+  getPresetExplanations,
+  resolveKeyboardShortcut
+} from "./App";
 
 describe("App", () => {
   it("returns preset explanation metadata in stable curated order", () => {
@@ -38,6 +44,8 @@ describe("App", () => {
     expect(html).toContain("aria-label=\"Rule table\"");
     expect(html).toContain("role=\"grid\"");
     expect(html).toContain("role=\"gridcell\"");
+    expect(html).toContain("data-action=\"copy-text\"");
+    expect(html).toContain("Copy text");
     expect(html).toContain("data-action=\"copy-svg\"");
     expect(html).toContain("Copy SVG");
     expect(html).toContain('<select id="boundaryMode"');
@@ -131,5 +139,33 @@ describe("App", () => {
     expect(copied).toContain('width="120" height="24"');
     expect(copied).toContain("3 generations");
     expect(copied).not.toContain('y="24"');
+  });
+
+  it("copies plain text for the current visible generations", async () => {
+    const writeText = vi.fn<[(value: string) => Promise<void>]>().mockResolvedValue(undefined);
+
+    await copyTextForSettings(
+      {
+        rule: 90,
+        width: 15,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "fixed"
+      },
+      3,
+      writeText
+    );
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toBe(`# Ruleloom Lab pattern
+rule: 90
+width: 15
+generations: 3
+seed: center
+boundary: fixed
+
+.......#.......
+......#.#......
+.....#...#.....`);
   });
 });

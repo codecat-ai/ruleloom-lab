@@ -10,6 +10,7 @@ import {
 } from "./automata";
 import { DEFAULT_SETTINGS, parseSettingsQuery, serializeSettingsQuery } from "./share";
 import { exportPatternSvg } from "./svgExport";
+import { exportPatternText } from "./textExport";
 import "./App.css";
 
 const PRESETS = [
@@ -137,6 +138,7 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
         <button type="button" data-action="reset">Reset</button>
         <button type="button" data-action="run">Run</button>
         <button type="button" data-action="share">Copy share URL</button>
+        <button type="button" data-action="copy-text">Copy text</button>
         <button type="button" data-action="copy-svg">Copy SVG</button>
         <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
       </section>
@@ -262,6 +264,12 @@ export function mountApp(root: HTMLElement): void {
         return navigator.clipboard?.writeText(svg) ?? Promise.resolve();
       });
     });
+
+    root.querySelector<HTMLButtonElement>("[data-action='copy-text']")?.addEventListener("click", async () => {
+      await copyTextForSettings(settings, visibleGenerations, (text) => {
+        return navigator.clipboard?.writeText(text) ?? Promise.resolve();
+      });
+    });
   };
 
   const stop = () => {
@@ -282,6 +290,15 @@ export async function copySvgForSettings(
 ): Promise<void> {
   const svg = exportPatternSvg({ ...settings, generations: visibleGenerations });
   await writeText(svg);
+}
+
+export async function copyTextForSettings(
+  settings: AutomatonSettings,
+  visibleGenerations: number,
+  writeText: (value: string) => Promise<void>
+): Promise<void> {
+  const text = exportPatternText({ ...settings, generations: visibleGenerations });
+  await writeText(text);
 }
 
 function readSettings(root: HTMLElement, fallback: AutomatonSettings): AutomatonSettings {

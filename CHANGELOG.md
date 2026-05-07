@@ -8,7 +8,9 @@ All notable changes to Ruleloom Lab will be documented in this file.
 - Added deterministic plain-text pattern export and a Copy text clipboard action for visible generations.
 - Added deterministic standalone SVG pattern export with accessible title, description, metadata, and alive-cell rectangles.
 - Added a Copy SVG action for copying the current visible automaton pattern to the clipboard.
+- Added deterministic Life/RLE-style text export and a Copy RLE clipboard action for visible generations.
 - Added learner-facing explanations for the Rule 30, Rule 90, Rule 110, and Rule 184 presets.
+- Updated multilingual documentation for RLE-like export support.
 - Updated multilingual documentation for SVG export support.
 - Updated multilingual documentation for plain-text export support.
 - Updated multilingual documentation for preset explanations.

@@ -9,6 +9,7 @@ import {
   MIN_WIDTH
 } from "./automata";
 import { DEFAULT_SETTINGS, parseSettingsQuery, serializeSettingsQuery } from "./share";
+import { exportPatternRle } from "./rleExport";
 import { exportPatternSvg } from "./svgExport";
 import { exportPatternText } from "./textExport";
 import "./App.css";
@@ -140,6 +141,7 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
         <button type="button" data-action="share">Copy share URL</button>
         <button type="button" data-action="copy-text">Copy text</button>
         <button type="button" data-action="copy-svg">Copy SVG</button>
+        <button type="button" data-action="copy-rle">Copy RLE</button>
         <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
       </section>
 
@@ -270,6 +272,12 @@ export function mountApp(root: HTMLElement): void {
         return navigator.clipboard?.writeText(text) ?? Promise.resolve();
       });
     });
+
+    root.querySelector<HTMLButtonElement>("[data-action='copy-rle']")?.addEventListener("click", async () => {
+      await copyRleForSettings(settings, visibleGenerations, (rle) => {
+        return navigator.clipboard?.writeText(rle) ?? Promise.resolve();
+      });
+    });
   };
 
   const stop = () => {
@@ -299,6 +307,17 @@ export async function copyTextForSettings(
 ): Promise<void> {
   const text = exportPatternText({ ...settings, generations: visibleGenerations });
   await writeText(text);
+}
+
+export async function copyRleForSettings(
+  settings: AutomatonSettings,
+  visibleGenerations: number,
+  writeText: (value: string) => Promise<void>
+): Promise<void> {
+  const visibleSettings = { ...settings, generations: visibleGenerations };
+  const rows = generateAutomaton(visibleSettings);
+  const rle = exportPatternRle(rows, visibleSettings);
+  await writeText(rle);
 }
 
 function readSettings(root: HTMLElement, fallback: AutomatonSettings): AutomatonSettings {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  copyRleForSettings,
   copySvgForSettings,
   copyTextForSettings,
   createAppHtml,
@@ -48,6 +49,8 @@ describe("App", () => {
     expect(html).toContain("Copy text");
     expect(html).toContain("data-action=\"copy-svg\"");
     expect(html).toContain("Copy SVG");
+    expect(html).toContain("data-action=\"copy-rle\"");
+    expect(html).toContain("Copy RLE");
     expect(html).toContain('<select id="boundaryMode"');
     expect(html).toContain("Fixed zero edges");
     expect(html).toContain("Wrapped circular edges");
@@ -167,5 +170,31 @@ boundary: fixed
 .......#.......
 ......#.#......
 .....#...#.....`);
+  });
+
+  it("copies RLE-like text for the current visible generations", async () => {
+    const writeText = vi.fn<[(value: string) => Promise<void>]>().mockResolvedValue(undefined);
+
+    await copyRleForSettings(
+      {
+        rule: 90,
+        width: 15,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "fixed"
+      },
+      3,
+      writeText
+    );
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toBe(`# Ruleloom Lab
+# rule: 90
+# width: 15
+# generations: 3
+# seed mode: center
+# boundary mode: fixed
+x = 15, y = 3, rule = W90
+7bo7b$6bobo6b$5bo3bo5b!`);
   });
 });

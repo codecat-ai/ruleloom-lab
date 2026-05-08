@@ -54,6 +54,25 @@ describe("App", () => {
     expect(html).toContain('<select id="boundaryMode"');
     expect(html).toContain("Fixed zero edges");
     expect(html).toContain("Wrapped circular edges");
+    expect(html).toContain("Compare with rule");
+    expect(html).toContain('id="comparisonRule"');
+    expect(html).toContain("First differing generation");
+    expect(html).toContain("Total differing cells");
+  });
+
+  it("renders deterministic rule comparison summary for the current settings", () => {
+    const html = createAppHtml({
+      rule: 30,
+      width: 15,
+      generations: 5,
+      seedMode: "center",
+      boundaryMode: "fixed"
+    });
+
+    expect(html).toContain('value="90"');
+    expect(html).toContain("Rule 30 vs Rule 90");
+    expect(html).toContain("Generation 1");
+    expect(html).toContain("8 cells differ");
   });
 
   it("renders discoverable keyboard shortcut guidance", () => {

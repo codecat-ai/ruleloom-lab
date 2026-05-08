@@ -6,9 +6,11 @@ import {
   MAX_GENERATIONS,
   MAX_WIDTH,
   MIN_GENERATIONS,
-  MIN_WIDTH
+  MIN_WIDTH,
+  clamp
 } from "./automata";
 import { DEFAULT_SETTINGS, parseSettingsQuery, serializeSettingsQuery } from "./share";
+import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
 import { exportPatternSvg } from "./svgExport";
 import { exportPatternText } from "./textExport";
@@ -49,6 +51,10 @@ interface KeyboardShortcutInput {
   targetIsContentEditable?: boolean;
 }
 
+interface AppSettings extends AutomatonSettings {
+  comparisonRule: number;
+}
+
 export function getPresetExplanations(): Array<(typeof PRESETS)[number]> {
   return [...PRESETS];
 }
@@ -75,9 +81,18 @@ export function resolveKeyboardShortcut(input: KeyboardShortcutInput): KeyboardS
   return preset ? { type: "preset", rule: preset.rule } : undefined;
 }
 
-export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): string {
-  const rows = generateAutomaton(settings);
-  const ruleTable = decodeRule(settings.rule);
+export function createAppHtml(settings: AutomatonSettings | AppSettings = DEFAULT_SETTINGS): string {
+  const appSettings = normalizeAppSettings(settings);
+  const rows = generateAutomaton(appSettings);
+  const ruleTable = decodeRule(appSettings.rule);
+  const comparison = compareRules({
+    primaryRule: appSettings.rule,
+    comparisonRule: appSettings.comparisonRule,
+    width: appSettings.width,
+    steps: appSettings.generations,
+    seed: comparisonSeedFromSettings(appSettings),
+    wrap: appSettings.boundaryMode === "wrap"
+  });
 
   return `
     <main class="shell">
@@ -88,49 +103,59 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
           <p class="lede">Explore how three-cell neighborhood rules weave complex local-first patterns.</p>
         </div>
         <div class="status" aria-live="polite">
-          <span>Rule ${settings.rule}</span>
-          <span>${settings.width} cells</span>
-          <span>${settings.generations} rows</span>
-          <span>${boundaryModeLabel(settings.boundaryMode)}</span>
+          <span>Rule ${appSettings.rule}</span>
+          <span>${appSettings.width} cells</span>
+          <span>${appSettings.generations} rows</span>
+          <span>${boundaryModeLabel(appSettings.boundaryMode)}</span>
         </div>
       </section>
 
       <section class="controls" aria-label="Simulation controls">
         <label>
           Rule
-          <input id="rule" type="number" min="0" max="255" value="${settings.rule}" />
+          <input id="rule" type="number" min="0" max="255" value="${appSettings.rule}" />
+        </label>
+        <label>
+          Compare with rule
+          <input id="comparisonRule" type="number" min="0" max="255" value="${appSettings.comparisonRule}" />
         </label>
         <label>
           Width
-          <input id="width" type="number" min="${MIN_WIDTH}" max="${MAX_WIDTH}" value="${settings.width}" />
+          <input id="width" type="number" min="${MIN_WIDTH}" max="${MAX_WIDTH}" value="${appSettings.width}" />
         </label>
         <label>
           Generations
-          <input id="generations" type="number" min="${MIN_GENERATIONS}" max="${MAX_GENERATIONS}" value="${settings.generations}" />
+          <input id="generations" type="number" min="${MIN_GENERATIONS}" max="${MAX_GENERATIONS}" value="${appSettings.generations}" />
         </label>
         <label>
           Seed
           <select id="seedMode">
-            ${selectOption("center", "Center", settings.seedMode)}
-            ${selectOption("random", "Deterministic random", settings.seedMode)}
-            ${selectOption("custom", "Custom bits", settings.seedMode)}
+            ${selectOption("center", "Center", appSettings.seedMode)}
+            ${selectOption("random", "Deterministic random", appSettings.seedMode)}
+            ${selectOption("custom", "Custom bits", appSettings.seedMode)}
           </select>
         </label>
         <label>
           Boundary
           <select id="boundaryMode">
-            ${selectOption("fixed", "Fixed zero edges", settings.boundaryMode ?? "fixed")}
-            ${selectOption("wrap", "Wrapped circular edges", settings.boundaryMode ?? "fixed")}
+            ${selectOption("fixed", "Fixed zero edges", appSettings.boundaryMode ?? "fixed")}
+            ${selectOption("wrap", "Wrapped circular edges", appSettings.boundaryMode ?? "fixed")}
           </select>
         </label>
         <label>
           Random seed
-          <input id="randomSeed" type="number" value="${settings.randomSeed ?? 1}" />
+          <input id="randomSeed" type="number" value="${appSettings.randomSeed ?? 1}" />
         </label>
         <label class="wide">
           Custom bits
-          <input id="customSeed" type="text" inputmode="numeric" value="${escapeHtml(settings.customSeed ?? "")}" />
+          <input id="customSeed" type="text" inputmode="numeric" value="${escapeHtml(appSettings.customSeed ?? "")}" />
         </label>
+      </section>
+
+      <section class="comparison-summary" aria-live="polite" aria-label="Rule comparison summary">
+        <strong>Rule ${appSettings.rule} vs Rule ${appSettings.comparisonRule}</strong>
+        <span>First differing generation: ${formatFirstDifference(comparison.firstDifferingGeneration)}</span>
+        <span>Total differing cells: ${comparison.totalDifferingCells} ${comparison.totalDifferingCells === 1 ? "cell differs" : "cells differ"}</span>
       </section>
 
       <section class="actions" aria-label="Run controls">
@@ -160,7 +185,7 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
         </table>
 
         <div class="grid-wrap">
-          <div class="automaton-grid" role="grid" aria-label="Automaton grid" style="--cells: ${settings.width}">
+          <div class="automaton-grid" role="grid" aria-label="Automaton grid" style="--cells: ${appSettings.width}">
             ${rows.map((row, rowIndex) => row.map((bit, columnIndex) => `<span role="gridcell" class="cell ${bit ? "alive" : ""}" aria-label="row ${rowIndex + 1}, cell ${columnIndex + 1}, ${bit ? "alive" : "empty"}"></span>`).join("")).join("")}
           </div>
         </div>
@@ -170,7 +195,7 @@ export function createAppHtml(settings: AutomatonSettings = DEFAULT_SETTINGS): s
 }
 
 export function mountApp(root: HTMLElement): void {
-  let settings = parseSettingsQuery(globalThis.location?.search ?? "");
+  let settings: AppSettings = normalizeAppSettings(parseSettingsQuery(globalThis.location?.search ?? ""));
   let visibleGenerations = settings.generations;
   let timer: number | undefined;
 
@@ -180,7 +205,9 @@ export function mountApp(root: HTMLElement): void {
   };
 
   const updateFromControls = () => {
-    settings = parseSettingsQuery(serializeSettingsQuery(readSettings(root, settings)));
+    settings = normalizeAppSettings(parseSettingsQuery(serializeSettingsQuery(readSettings(root, settings))), {
+      comparisonRule: readNumber(root, "#comparisonRule", settings.comparisonRule)
+    });
     visibleGenerations = settings.generations;
     history.replaceState(null, "", serializeSettingsQuery(settings));
     render();
@@ -320,9 +347,10 @@ export async function copyRleForSettings(
   await writeText(rle);
 }
 
-function readSettings(root: HTMLElement, fallback: AutomatonSettings): AutomatonSettings {
+function readSettings(root: HTMLElement, fallback: AppSettings): AppSettings {
   return {
     rule: readNumber(root, "#rule", fallback.rule),
+    comparisonRule: readNumber(root, "#comparisonRule", fallback.comparisonRule),
     width: readNumber(root, "#width", fallback.width),
     generations: readNumber(root, "#generations", fallback.generations),
     seedMode: root.querySelector<HTMLSelectElement>("#seedMode")?.value as AutomatonSettings["seedMode"],
@@ -344,6 +372,26 @@ function selectOption(value: string, label: string, selected: string): string {
 
 function boundaryModeLabel(boundaryMode: AutomatonSettings["boundaryMode"]): string {
   return boundaryMode === "wrap" ? "Wrapped edges" : "Fixed zero edges";
+}
+
+function normalizeAppSettings(settings: AutomatonSettings | Partial<AppSettings>, overrides: Partial<AppSettings> = {}): AppSettings {
+  return {
+    ...settings,
+    ...overrides,
+    comparisonRule: clamp(overrides.comparisonRule ?? settings.comparisonRule ?? 90, 0, 255)
+  } as AppSettings;
+}
+
+function comparisonSeedFromSettings(settings: AutomatonSettings): RuleComparisonSeed {
+  return {
+    mode: settings.seedMode,
+    randomSeed: settings.randomSeed,
+    customSeed: settings.customSeed
+  };
+}
+
+function formatFirstDifference(firstDifferingGeneration: number | null): string {
+  return firstDifferingGeneration === null ? "None" : `Generation ${firstDifferingGeneration}`;
 }
 
 function escapeHtml(value: string): string {

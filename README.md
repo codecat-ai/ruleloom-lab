@@ -15,6 +15,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Width, generation count, and seed controls with predictable clamping.
 - Center, deterministic random, and custom bit-string seed modes.
 - Boundary mode control for comparing fixed-zero edges with wrapped circular edges.
+- Side-by-side rule comparison summary for the active rule and a second Wolfram rule over the current board settings.
 - Accessible HTML/CSS automata grid.
 - Rule table for neighborhoods from `111` to `000`.
 - Step, reset, run, and share controls.
@@ -49,6 +50,8 @@ Open the printed local URL in a browser.
 
 Use the Boundary control to compare the default fixed-zero edges with wrapped circular edges without changing the rule or seed.
 
+Use Compare with rule to see the first generation where two rules diverge and the total differing cells for the current width, generation count, seed, and boundary mode.
+
 Use keyboard shortcuts when focus is not inside a form control: Space for Run/Pause, ArrowRight or `.` for Step, `R` for Reset, and `1`-`4` for Rule 30, Rule 90, Rule 110, and Rule 184 in visible preset order.
 
 ## Examples
@@ -62,6 +65,8 @@ Restore a deterministic Rule 90 exploration from a URL query string:
 Try the Rule 30 preset for chaotic pseudo-random growth, Rule 90 for nested Sierpinski triangles, Rule 110 for computationally universal behavior, or Rule 184 for traffic-flow movement. The app shows these explanations next to the preset controls.
 
 Switch `boundary=wrap` in a share URL to make the left and right edges read each other as neighbors.
+
+Set the main rule to `30` and Compare with rule to `90` to see a deterministic divergence summary for the same board.
 
 ## Configuration
 
@@ -91,7 +96,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export, clipboard copy behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export, clipboard copy behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -100,7 +105,6 @@ npm test -- --run
 ## Roadmap
 
 - Export PNG pattern snapshots.
-- Add side-by-side rule comparison.
 - Add shareable gallery examples in documentation.
 
 ## Contributing

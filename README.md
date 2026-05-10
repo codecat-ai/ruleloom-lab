@@ -2,7 +2,6 @@
 
 [English](README.md) | [中文](README-zh.md) | [日本語](README-ja.md)
 
-
 Ruleloom Lab is a local-first browser playground for elementary cellular automata: type a Wolfram rule number, choose a seed, and watch tiny neighborhood rules weave surprising visual patterns.
 
 ## Problem and Motivation
@@ -23,12 +22,14 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Copy text action for portable monospaced pattern exports with rule, width, generation, seed, and boundary metadata.
 - Copy SVG action for standalone pattern snapshots.
 - Copy RLE action for deterministic Life/RLE-style text exports of the currently visible generations.
+- Download PNG action for local pattern snapshots of the currently visible generations.
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
 - Pure deterministic engine exported from `src/automata.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
 - Deterministic RLE-like pattern exporter in `src/rleExport.ts`.
+- Deterministic PNG export helper in `src/pngExport.ts` with injectable canvas encoding for unit tests.
 
 ## Installation
 
@@ -54,6 +55,8 @@ Use Compare with rule to see the first generation where two rules diverge and th
 
 Use keyboard shortcuts when focus is not inside a form control: Space for Run/Pause, ArrowRight or `.` for Step, `R` for Reset, and `1`-`4` for Rule 30, Rule 90, Rule 110, and Rule 184 in visible preset order.
 
+Use Download PNG to save a local snapshot of the currently visible generations. PNG export runs in the browser with no uploads.
+
 ## Examples
 
 Restore a deterministic Rule 90 exploration from a URL query string:
@@ -67,6 +70,8 @@ Try the Rule 30 preset for chaotic pseudo-random growth, Rule 90 for nested Sier
 Switch `boundary=wrap` in a share URL to make the left and right edges read each other as neighbors.
 
 Set the main rule to `30` and Compare with rule to `90` to see a deterministic divergence summary for the same board.
+
+Step to a partial run, then use Download PNG to capture only the visible rows as a filename-safe snapshot such as `ruleloom-rule-90-w61-g12-center-fixed.png`.
 
 ## Configuration
 
@@ -96,7 +101,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export, clipboard copy behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -104,8 +109,8 @@ npm test -- --run
 
 ## Roadmap
 
-- Export PNG pattern snapshots.
 - Add shareable gallery examples in documentation.
+- Add import support for saved text or RLE pattern files.
 
 ## Contributing
 

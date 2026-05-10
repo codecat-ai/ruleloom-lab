@@ -7,36 +7,48 @@ import {
   MAX_WIDTH,
   MIN_GENERATIONS,
   MIN_WIDTH,
-  clamp
+  clamp,
 } from "./automata";
-import { DEFAULT_SETTINGS, parseSettingsQuery, serializeSettingsQuery } from "./share";
+import {
+  DEFAULT_SETTINGS,
+  parseSettingsQuery,
+  serializeSettingsQuery,
+} from "./share";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
 import { exportPatternSvg } from "./svgExport";
 import { exportPatternText } from "./textExport";
+import {
+  exportPatternPngDataUrl,
+  type PngCanvasFactory,
+  type PngExportPayload,
+} from "./pngExport";
 import "./App.css";
 
 const PRESETS = [
   {
     label: "Rule 30",
     rule: 30,
-    explanation: "Chaotic, pseudo-random growth from a simple deterministic rule."
+    explanation:
+      "Chaotic, pseudo-random growth from a simple deterministic rule.",
   },
   {
     label: "Rule 90",
     rule: 90,
-    explanation: "Creates nested Sierpinski triangles that reveal self-similarity."
+    explanation:
+      "Creates nested Sierpinski triangles that reveal self-similarity.",
   },
   {
     label: "Rule 110",
     rule: 110,
-    explanation: "Computationally universal behavior with persistent moving structures."
+    explanation:
+      "Computationally universal behavior with persistent moving structures.",
   },
   {
     label: "Rule 184",
     rule: 184,
-    explanation: "Models traffic flow as particles moving through local gaps."
-  }
+    explanation: "Models traffic flow as particles moving through local gaps.",
+  },
 ] as const;
 
 export type KeyboardShortcutAction =
@@ -59,7 +71,9 @@ export function getPresetExplanations(): Array<(typeof PRESETS)[number]> {
   return [...PRESETS];
 }
 
-export function resolveKeyboardShortcut(input: KeyboardShortcutInput): KeyboardShortcutAction | undefined {
+export function resolveKeyboardShortcut(
+  input: KeyboardShortcutInput,
+): KeyboardShortcutAction | undefined {
   if (isFormControlTarget(input)) {
     return undefined;
   }
@@ -81,7 +95,10 @@ export function resolveKeyboardShortcut(input: KeyboardShortcutInput): KeyboardS
   return preset ? { type: "preset", rule: preset.rule } : undefined;
 }
 
-export function createAppHtml(settings: AutomatonSettings | AppSettings = DEFAULT_SETTINGS): string {
+export function createAppHtml(
+  settings: AutomatonSettings | AppSettings = DEFAULT_SETTINGS,
+  exportStatus = "",
+): string {
   const appSettings = normalizeAppSettings(settings);
   const rows = generateAutomaton(appSettings);
   const ruleTable = decodeRule(appSettings.rule);
@@ -91,7 +108,7 @@ export function createAppHtml(settings: AutomatonSettings | AppSettings = DEFAUL
     width: appSettings.width,
     steps: appSettings.generations,
     seed: comparisonSeedFromSettings(appSettings),
-    wrap: appSettings.boundaryMode === "wrap"
+    wrap: appSettings.boundaryMode === "wrap",
   });
 
   return `
@@ -167,6 +184,8 @@ export function createAppHtml(settings: AutomatonSettings | AppSettings = DEFAUL
         <button type="button" data-action="copy-text">Copy text</button>
         <button type="button" data-action="copy-svg">Copy SVG</button>
         <button type="button" data-action="copy-rle">Copy RLE</button>
+        <button type="button" data-action="download-png">Download PNG</button>
+        <p class="export-status" aria-live="polite" aria-label="Export status">${escapeHtml(exportStatus)}</p>
         <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
       </section>
 
@@ -177,10 +196,14 @@ export function createAppHtml(settings: AutomatonSettings | AppSettings = DEFAUL
       <section class="layout">
         <table class="rule-table" aria-label="Rule table">
           <thead>
-            <tr>${neighborhoods().map((neighborhood) => `<th><code>${neighborhood}</code></th>`).join("")}</tr>
+            <tr>${neighborhoods()
+              .map((neighborhood) => `<th><code>${neighborhood}</code></th>`)
+              .join("")}</tr>
           </thead>
           <tbody>
-            <tr>${neighborhoods().map((neighborhood) => `<td>${ruleTable[neighborhood]}</td>`).join("")}</tr>
+            <tr>${neighborhoods()
+              .map((neighborhood) => `<td>${ruleTable[neighborhood]}</td>`)
+              .join("")}</tr>
           </tbody>
         </table>
 
@@ -195,19 +218,32 @@ export function createAppHtml(settings: AutomatonSettings | AppSettings = DEFAUL
 }
 
 export function mountApp(root: HTMLElement): void {
-  let settings: AppSettings = normalizeAppSettings(parseSettingsQuery(globalThis.location?.search ?? ""));
+  let settings: AppSettings = normalizeAppSettings(
+    parseSettingsQuery(globalThis.location?.search ?? ""),
+  );
   let visibleGenerations = settings.generations;
+  let exportStatus = "";
   let timer: number | undefined;
 
   const render = () => {
-    root.innerHTML = createAppHtml({ ...settings, generations: visibleGenerations });
+    root.innerHTML = createAppHtml(
+      { ...settings, generations: visibleGenerations },
+      exportStatus,
+    );
     bindEvents();
   };
 
   const updateFromControls = () => {
-    settings = normalizeAppSettings(parseSettingsQuery(serializeSettingsQuery(readSettings(root, settings))), {
-      comparisonRule: readNumber(root, "#comparisonRule", settings.comparisonRule)
-    });
+    settings = normalizeAppSettings(
+      parseSettingsQuery(serializeSettingsQuery(readSettings(root, settings))),
+      {
+        comparisonRule: readNumber(
+          root,
+          "#comparisonRule",
+          settings.comparisonRule,
+        ),
+      },
+    );
     visibleGenerations = settings.generations;
     history.replaceState(null, "", serializeSettingsQuery(settings));
     render();
@@ -237,7 +273,8 @@ export function mountApp(root: HTMLElement): void {
     }
 
     timer = globalThis.setInterval(() => {
-      visibleGenerations = visibleGenerations >= settings.generations ? 1 : visibleGenerations + 1;
+      visibleGenerations =
+        visibleGenerations >= settings.generations ? 1 : visibleGenerations + 1;
       render();
     }, 180);
   };
@@ -246,7 +283,7 @@ export function mountApp(root: HTMLElement): void {
     const shortcut = resolveKeyboardShortcut({
       key: event.key,
       targetTagName: readTargetTagName(event.target),
-      targetIsContentEditable: readTargetIsContentEditable(event.target)
+      targetIsContentEditable: readTargetIsContentEditable(event.target),
     });
 
     if (!shortcut) {
@@ -267,44 +304,80 @@ export function mountApp(root: HTMLElement): void {
   };
 
   const bindEvents = () => {
-    root.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select").forEach((control) => {
-      control.addEventListener("change", updateFromControls);
-    });
-
-    root.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach((button) => {
-      button.addEventListener("click", () => {
-        applyPreset(Number(button.dataset.preset));
+    root
+      .querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select")
+      .forEach((control) => {
+        control.addEventListener("change", updateFromControls);
       });
-    });
 
-    root.querySelector<HTMLButtonElement>("[data-action='step']")?.addEventListener("click", step);
-
-    root.querySelector<HTMLButtonElement>("[data-action='reset']")?.addEventListener("click", reset);
-
-    root.querySelector<HTMLButtonElement>("[data-action='run']")?.addEventListener("click", toggleRun);
-
-    root.querySelector<HTMLButtonElement>("[data-action='share']")?.addEventListener("click", async () => {
-      const url = `${location.origin}${location.pathname}${serializeSettingsQuery(settings)}`;
-      await navigator.clipboard?.writeText(url);
-    });
-
-    root.querySelector<HTMLButtonElement>("[data-action='copy-svg']")?.addEventListener("click", async () => {
-      await copySvgForSettings(settings, visibleGenerations, (svg) => {
-        return navigator.clipboard?.writeText(svg) ?? Promise.resolve();
+    root
+      .querySelectorAll<HTMLButtonElement>("[data-preset]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          applyPreset(Number(button.dataset.preset));
+        });
       });
-    });
 
-    root.querySelector<HTMLButtonElement>("[data-action='copy-text']")?.addEventListener("click", async () => {
-      await copyTextForSettings(settings, visibleGenerations, (text) => {
-        return navigator.clipboard?.writeText(text) ?? Promise.resolve();
-      });
-    });
+    root
+      .querySelector<HTMLButtonElement>("[data-action='step']")
+      ?.addEventListener("click", step);
 
-    root.querySelector<HTMLButtonElement>("[data-action='copy-rle']")?.addEventListener("click", async () => {
-      await copyRleForSettings(settings, visibleGenerations, (rle) => {
-        return navigator.clipboard?.writeText(rle) ?? Promise.resolve();
+    root
+      .querySelector<HTMLButtonElement>("[data-action='reset']")
+      ?.addEventListener("click", reset);
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='run']")
+      ?.addEventListener("click", toggleRun);
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='share']")
+      ?.addEventListener("click", async () => {
+        const url = `${location.origin}${location.pathname}${serializeSettingsQuery(settings)}`;
+        await navigator.clipboard?.writeText(url);
       });
-    });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='copy-svg']")
+      ?.addEventListener("click", async () => {
+        await copySvgForSettings(settings, visibleGenerations, (svg) => {
+          return navigator.clipboard?.writeText(svg) ?? Promise.resolve();
+        });
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='copy-text']")
+      ?.addEventListener("click", async () => {
+        await copyTextForSettings(settings, visibleGenerations, (text) => {
+          return navigator.clipboard?.writeText(text) ?? Promise.resolve();
+        });
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='copy-rle']")
+      ?.addEventListener("click", async () => {
+        await copyRleForSettings(settings, visibleGenerations, (rle) => {
+          return navigator.clipboard?.writeText(rle) ?? Promise.resolve();
+        });
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='download-png']")
+      ?.addEventListener("click", async () => {
+        try {
+          const payload = await downloadPngForSettings(
+            settings,
+            visibleGenerations,
+            createBrowserPngCanvasFactory(document),
+            downloadDataUrl,
+          );
+          exportStatus = `Downloaded ${payload.filename}.`;
+        } catch (error) {
+          exportStatus =
+            error instanceof Error ? error.message : "PNG export failed.";
+        }
+        render();
+      });
   };
 
   const stop = () => {
@@ -321,25 +394,31 @@ export function mountApp(root: HTMLElement): void {
 export async function copySvgForSettings(
   settings: AutomatonSettings,
   visibleGenerations: number,
-  writeText: (value: string) => Promise<void>
+  writeText: (value: string) => Promise<void>,
 ): Promise<void> {
-  const svg = exportPatternSvg({ ...settings, generations: visibleGenerations });
+  const svg = exportPatternSvg({
+    ...settings,
+    generations: visibleGenerations,
+  });
   await writeText(svg);
 }
 
 export async function copyTextForSettings(
   settings: AutomatonSettings,
   visibleGenerations: number,
-  writeText: (value: string) => Promise<void>
+  writeText: (value: string) => Promise<void>,
 ): Promise<void> {
-  const text = exportPatternText({ ...settings, generations: visibleGenerations });
+  const text = exportPatternText({
+    ...settings,
+    generations: visibleGenerations,
+  });
   await writeText(text);
 }
 
 export async function copyRleForSettings(
   settings: AutomatonSettings,
   visibleGenerations: number,
-  writeText: (value: string) => Promise<void>
+  writeText: (value: string) => Promise<void>,
 ): Promise<void> {
   const visibleSettings = { ...settings, generations: visibleGenerations };
   const rows = generateAutomaton(visibleSettings);
@@ -347,20 +426,87 @@ export async function copyRleForSettings(
   await writeText(rle);
 }
 
-function readSettings(root: HTMLElement, fallback: AppSettings): AppSettings {
+export async function downloadPngForSettings(
+  settings: AutomatonSettings,
+  visibleGenerations: number,
+  factory: PngCanvasFactory,
+  download: (dataUrl: string, filename: string) => void,
+): Promise<PngExportPayload> {
+  const payload = await exportPatternPngDataUrl(settings, factory, {
+    visibleGenerations,
+  });
+  download(payload.dataUrl, payload.filename);
+  return payload;
+}
+
+export function createBrowserPngCanvasFactory(
+  documentRef: Document,
+): PngCanvasFactory {
   return {
-    rule: readNumber(root, "#rule", fallback.rule),
-    comparisonRule: readNumber(root, "#comparisonRule", fallback.comparisonRule),
-    width: readNumber(root, "#width", fallback.width),
-    generations: readNumber(root, "#generations", fallback.generations),
-    seedMode: root.querySelector<HTMLSelectElement>("#seedMode")?.value as AutomatonSettings["seedMode"],
-    boundaryMode: root.querySelector<HTMLSelectElement>("#boundaryMode")?.value as AutomatonSettings["boundaryMode"],
-    randomSeed: readNumber(root, "#randomSeed", fallback.randomSeed ?? 1),
-    customSeed: root.querySelector<HTMLInputElement>("#customSeed")?.value ?? fallback.customSeed
+    createCanvas(width, height) {
+      const canvas = documentRef.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("PNG export is unavailable in this browser.");
+      }
+
+      return {
+        context: {
+          get fillStyle() {
+            return String(context.fillStyle);
+          },
+          set fillStyle(value: string) {
+            context.fillStyle = value;
+          },
+          fillRect: (x, y, rectWidth, rectHeight) => {
+            context.fillRect(x, y, rectWidth, rectHeight);
+          },
+        },
+        encodePng: () => canvas.toDataURL("image/png"),
+      };
+    },
   };
 }
 
-function readNumber(root: HTMLElement, selector: string, fallback: number): number {
+function downloadDataUrl(dataUrl: string, filename: string): void {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  link.rel = "noopener";
+  document.body.append(link);
+  link.click();
+  link.remove();
+}
+
+function readSettings(root: HTMLElement, fallback: AppSettings): AppSettings {
+  return {
+    rule: readNumber(root, "#rule", fallback.rule),
+    comparisonRule: readNumber(
+      root,
+      "#comparisonRule",
+      fallback.comparisonRule,
+    ),
+    width: readNumber(root, "#width", fallback.width),
+    generations: readNumber(root, "#generations", fallback.generations),
+    seedMode: root.querySelector<HTMLSelectElement>("#seedMode")
+      ?.value as AutomatonSettings["seedMode"],
+    boundaryMode: root.querySelector<HTMLSelectElement>("#boundaryMode")
+      ?.value as AutomatonSettings["boundaryMode"],
+    randomSeed: readNumber(root, "#randomSeed", fallback.randomSeed ?? 1),
+    customSeed:
+      root.querySelector<HTMLInputElement>("#customSeed")?.value ??
+      fallback.customSeed,
+  };
+}
+
+function readNumber(
+  root: HTMLElement,
+  selector: string,
+  fallback: number,
+): number {
   const value = root.querySelector<HTMLInputElement>(selector)?.value;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -370,42 +516,66 @@ function selectOption(value: string, label: string, selected: string): string {
   return `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`;
 }
 
-function boundaryModeLabel(boundaryMode: AutomatonSettings["boundaryMode"]): string {
+function boundaryModeLabel(
+  boundaryMode: AutomatonSettings["boundaryMode"],
+): string {
   return boundaryMode === "wrap" ? "Wrapped edges" : "Fixed zero edges";
 }
 
-function normalizeAppSettings(settings: AutomatonSettings | Partial<AppSettings>, overrides: Partial<AppSettings> = {}): AppSettings {
+function normalizeAppSettings(
+  settings: AutomatonSettings | Partial<AppSettings>,
+  overrides: Partial<AppSettings> = {},
+): AppSettings {
   return {
     ...settings,
     ...overrides,
-    comparisonRule: clamp(overrides.comparisonRule ?? settings.comparisonRule ?? 90, 0, 255)
+    comparisonRule: clamp(
+      overrides.comparisonRule ?? settings.comparisonRule ?? 90,
+      0,
+      255,
+    ),
   } as AppSettings;
 }
 
-function comparisonSeedFromSettings(settings: AutomatonSettings): RuleComparisonSeed {
+function comparisonSeedFromSettings(
+  settings: AutomatonSettings,
+): RuleComparisonSeed {
   return {
     mode: settings.seedMode,
     randomSeed: settings.randomSeed,
-    customSeed: settings.customSeed
+    customSeed: settings.customSeed,
   };
 }
 
-function formatFirstDifference(firstDifferingGeneration: number | null): string {
-  return firstDifferingGeneration === null ? "None" : `Generation ${firstDifferingGeneration}`;
+function formatFirstDifference(
+  firstDifferingGeneration: number | null,
+): string {
+  return firstDifferingGeneration === null
+    ? "None"
+    : `Generation ${firstDifferingGeneration}`;
 }
 
 function escapeHtml(value: string): string {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function isFormControlTarget(input: KeyboardShortcutInput): boolean {
   const tagName = input.targetTagName?.toLowerCase();
-  return input.targetIsContentEditable === true || ["button", "input", "select", "textarea"].includes(tagName ?? "");
+  return (
+    input.targetIsContentEditable === true ||
+    ["button", "input", "select", "textarea"].includes(tagName ?? "")
+  );
 }
 
 function readTargetTagName(target: EventTarget | null): string | undefined {
   const maybeElement = target as { tagName?: unknown } | null;
-  return typeof maybeElement?.tagName === "string" ? maybeElement.tagName : undefined;
+  return typeof maybeElement?.tagName === "string"
+    ? maybeElement.tagName
+    : undefined;
 }
 
 function readTargetIsContentEditable(target: EventTarget | null): boolean {

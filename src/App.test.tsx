@@ -4,9 +4,11 @@ import {
   copySvgForSettings,
   copyTextForSettings,
   createAppHtml,
+  downloadPngForSettings,
   getPresetExplanations,
-  resolveKeyboardShortcut
+  resolveKeyboardShortcut,
 } from "./App";
+import type { PngCanvasFactory } from "./pngExport";
 
 describe("App", () => {
   it("returns preset explanation metadata in stable curated order", () => {
@@ -14,23 +16,27 @@ describe("App", () => {
       {
         label: "Rule 30",
         rule: 30,
-        explanation: "Chaotic, pseudo-random growth from a simple deterministic rule."
+        explanation:
+          "Chaotic, pseudo-random growth from a simple deterministic rule.",
       },
       {
         label: "Rule 90",
         rule: 90,
-        explanation: "Creates nested Sierpinski triangles that reveal self-similarity."
+        explanation:
+          "Creates nested Sierpinski triangles that reveal self-similarity.",
       },
       {
         label: "Rule 110",
         rule: 110,
-        explanation: "Computationally universal behavior with persistent moving structures."
+        explanation:
+          "Computationally universal behavior with persistent moving structures.",
       },
       {
         label: "Rule 184",
         rule: 184,
-        explanation: "Models traffic flow as particles moving through local gaps."
-      }
+        explanation:
+          "Models traffic flow as particles moving through local gaps.",
+      },
     ]);
   });
 
@@ -38,19 +44,22 @@ describe("App", () => {
     const html = createAppHtml();
 
     expect(html).toContain("<h1>Ruleloom Lab</h1>");
-    expect(html).toContain("aria-label=\"Rule 30 preset\"");
-    expect(html).toContain("aria-label=\"Rule 90 preset\"");
-    expect(html).toContain("aria-label=\"Rule 110 preset\"");
-    expect(html).toContain("aria-label=\"Rule 184 preset\"");
-    expect(html).toContain("aria-label=\"Rule table\"");
-    expect(html).toContain("role=\"grid\"");
-    expect(html).toContain("role=\"gridcell\"");
-    expect(html).toContain("data-action=\"copy-text\"");
+    expect(html).toContain('aria-label="Rule 30 preset"');
+    expect(html).toContain('aria-label="Rule 90 preset"');
+    expect(html).toContain('aria-label="Rule 110 preset"');
+    expect(html).toContain('aria-label="Rule 184 preset"');
+    expect(html).toContain('aria-label="Rule table"');
+    expect(html).toContain('role="grid"');
+    expect(html).toContain('role="gridcell"');
+    expect(html).toContain('data-action="copy-text"');
     expect(html).toContain("Copy text");
-    expect(html).toContain("data-action=\"copy-svg\"");
+    expect(html).toContain('data-action="copy-svg"');
     expect(html).toContain("Copy SVG");
-    expect(html).toContain("data-action=\"copy-rle\"");
+    expect(html).toContain('data-action="copy-rle"');
     expect(html).toContain("Copy RLE");
+    expect(html).toContain('data-action="download-png"');
+    expect(html).toContain("Download PNG");
+    expect(html).toContain('aria-label="Export status"');
     expect(html).toContain('<select id="boundaryMode"');
     expect(html).toContain("Fixed zero edges");
     expect(html).toContain("Wrapped circular edges");
@@ -66,7 +75,7 @@ describe("App", () => {
       width: 15,
       generations: 5,
       seedMode: "center",
-      boundaryMode: "fixed"
+      boundaryMode: "fixed",
     });
 
     expect(html).toContain('value="90"');
@@ -86,22 +95,42 @@ describe("App", () => {
   });
 
   it("maps keyboard shortcuts to deterministic actions", () => {
-    expect(resolveKeyboardShortcut({ key: " " })).toEqual({ type: "toggleRun" });
-    expect(resolveKeyboardShortcut({ key: "ArrowRight" })).toEqual({ type: "step" });
+    expect(resolveKeyboardShortcut({ key: " " })).toEqual({
+      type: "toggleRun",
+    });
+    expect(resolveKeyboardShortcut({ key: "ArrowRight" })).toEqual({
+      type: "step",
+    });
     expect(resolveKeyboardShortcut({ key: "." })).toEqual({ type: "step" });
     expect(resolveKeyboardShortcut({ key: "r" })).toEqual({ type: "reset" });
     expect(resolveKeyboardShortcut({ key: "R" })).toEqual({ type: "reset" });
-    expect(resolveKeyboardShortcut({ key: "1" })).toEqual({ type: "preset", rule: 30 });
-    expect(resolveKeyboardShortcut({ key: "2" })).toEqual({ type: "preset", rule: 90 });
-    expect(resolveKeyboardShortcut({ key: "3" })).toEqual({ type: "preset", rule: 110 });
-    expect(resolveKeyboardShortcut({ key: "4" })).toEqual({ type: "preset", rule: 184 });
+    expect(resolveKeyboardShortcut({ key: "1" })).toEqual({
+      type: "preset",
+      rule: 30,
+    });
+    expect(resolveKeyboardShortcut({ key: "2" })).toEqual({
+      type: "preset",
+      rule: 90,
+    });
+    expect(resolveKeyboardShortcut({ key: "3" })).toEqual({
+      type: "preset",
+      rule: 110,
+    });
+    expect(resolveKeyboardShortcut({ key: "4" })).toEqual({
+      type: "preset",
+      rule: 184,
+    });
     expect(resolveKeyboardShortcut({ key: "5" })).toBeUndefined();
   });
 
   it("does not resolve shortcuts while typing in form controls", () => {
     for (const tagName of ["input", "select", "textarea", "button"]) {
-      expect(resolveKeyboardShortcut({ key: " ", targetTagName: tagName })).toBeUndefined();
-      expect(resolveKeyboardShortcut({ key: "1", targetTagName: tagName })).toBeUndefined();
+      expect(
+        resolveKeyboardShortcut({ key: " ", targetTagName: tagName }),
+      ).toBeUndefined();
+      expect(
+        resolveKeyboardShortcut({ key: "1", targetTagName: tagName }),
+      ).toBeUndefined();
     }
   });
 
@@ -111,11 +140,13 @@ describe("App", () => {
       width: 15,
       generations: 5,
       seedMode: "center",
-      boundaryMode: "wrap"
+      boundaryMode: "wrap",
     });
 
     expect(html).toContain("Wrapped edges");
-    expect(html).toContain('<option value="wrap" selected>Wrapped circular edges</option>');
+    expect(html).toContain(
+      '<option value="wrap" selected>Wrapped circular edges</option>',
+    );
   });
 
   it("renders preset explanations near the preset controls", () => {
@@ -127,7 +158,7 @@ describe("App", () => {
       expect(html).toContain(`<strong>${preset.label}</strong>`);
       expect(html).toContain(preset.explanation);
       expect(html.indexOf(`data-preset="${preset.rule}"`)).toBeLessThan(
-        html.indexOf(`data-preset-explanation="${preset.rule}"`)
+        html.indexOf(`data-preset-explanation="${preset.rule}"`),
       );
     }
   });
@@ -135,23 +166,34 @@ describe("App", () => {
   it("shows rule table neighborhoods from 111 to 000", () => {
     const html = createAppHtml();
 
-    for (const neighborhood of ["111", "110", "101", "100", "011", "010", "001", "000"]) {
+    for (const neighborhood of [
+      "111",
+      "110",
+      "101",
+      "100",
+      "011",
+      "010",
+      "001",
+      "000",
+    ]) {
       expect(html).toContain(`<code>${neighborhood}</code>`);
     }
   });
 
   it("copies SVG for the current visible generations", async () => {
-    const writeText = vi.fn<[(value: string) => Promise<void>]>().mockResolvedValue(undefined);
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
 
     await copySvgForSettings(
       {
         rule: 90,
         width: 15,
         generations: 80,
-        seedMode: "center"
+        seedMode: "center",
       },
       3,
-      writeText
+      writeText,
     );
 
     expect(writeText).toHaveBeenCalledOnce();
@@ -164,7 +206,9 @@ describe("App", () => {
   });
 
   it("copies plain text for the current visible generations", async () => {
-    const writeText = vi.fn<[(value: string) => Promise<void>]>().mockResolvedValue(undefined);
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
 
     await copyTextForSettings(
       {
@@ -172,10 +216,10 @@ describe("App", () => {
         width: 15,
         generations: 80,
         seedMode: "center",
-        boundaryMode: "fixed"
+        boundaryMode: "fixed",
       },
       3,
-      writeText
+      writeText,
     );
 
     expect(writeText).toHaveBeenCalledOnce();
@@ -192,7 +236,9 @@ boundary: fixed
   });
 
   it("copies RLE-like text for the current visible generations", async () => {
-    const writeText = vi.fn<[(value: string) => Promise<void>]>().mockResolvedValue(undefined);
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
 
     await copyRleForSettings(
       {
@@ -200,10 +246,10 @@ boundary: fixed
         width: 15,
         generations: 80,
         seedMode: "center",
-        boundaryMode: "fixed"
+        boundaryMode: "fixed",
       },
       3,
-      writeText
+      writeText,
     );
 
     expect(writeText).toHaveBeenCalledOnce();
@@ -215,5 +261,50 @@ boundary: fixed
 # boundary mode: fixed
 x = 15, y = 3, rule = W90
 7bo7b$6bobo6b$5bo3bo5b!`);
+  });
+
+  it("downloads PNG for the current visible generations", async () => {
+    const downloads: Array<{ dataUrl: string; filename: string }> = [];
+    const factory: PngCanvasFactory = {
+      createCanvas() {
+        return {
+          context: {
+            fillStyle: "",
+            fillRect: vi.fn(),
+          },
+          encodePng: vi
+            .fn()
+            .mockResolvedValue("data:image/png;base64,ruleloom"),
+        };
+      },
+    };
+
+    const payload = await downloadPngForSettings(
+      {
+        rule: 90,
+        width: 15,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "fixed",
+      },
+      3,
+      factory,
+      (dataUrl, filename) => {
+        downloads.push({ dataUrl, filename });
+      },
+    );
+
+    expect(payload).toMatchObject({
+      dataUrl: "data:image/png;base64,ruleloom",
+      filename: "ruleloom-rule-90-w15-g3-center-fixed.png",
+      height: 24,
+      width: 120,
+    });
+    expect(downloads).toEqual([
+      {
+        dataUrl: "data:image/png;base64,ruleloom",
+        filename: "ruleloom-rule-90-w15-g3-center-fixed.png",
+      },
+    ]);
   });
 });

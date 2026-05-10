@@ -16,6 +16,7 @@ import {
 } from "./share";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
+import { parseRuleloomRle } from "./rleImport";
 import { exportPatternSvg } from "./svgExport";
 import { exportPatternText } from "./textExport";
 import {
@@ -98,6 +99,7 @@ export function resolveKeyboardShortcut(
 export function createAppHtml(
   settings: AutomatonSettings | AppSettings = DEFAULT_SETTINGS,
   exportStatus = "",
+  rleImportText = "",
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const rows = generateAutomaton(appSettings);
@@ -169,6 +171,14 @@ export function createAppHtml(
         </label>
       </section>
 
+      <section class="rle-import" aria-label="RLE import">
+        <label>
+          Paste Ruleloom RLE
+          <textarea id="rleImport" rows="5" spellcheck="false">${escapeHtml(rleImportText)}</textarea>
+        </label>
+        <button type="button" data-action="import-rle">Import RLE</button>
+      </section>
+
       <section class="comparison-summary" aria-live="polite" aria-label="Rule comparison summary">
         <strong>Rule ${appSettings.rule} vs Rule ${appSettings.comparisonRule}</strong>
         <span>First differing generation: ${formatFirstDifference(comparison.firstDifferingGeneration)}</span>
@@ -223,12 +233,14 @@ export function mountApp(root: HTMLElement): void {
   );
   let visibleGenerations = settings.generations;
   let exportStatus = "";
+  let rleImportText = "";
   let timer: number | undefined;
 
   const render = () => {
     root.innerHTML = createAppHtml(
       { ...settings, generations: visibleGenerations },
       exportStatus,
+      rleImportText,
     );
     bindEvents();
   };
@@ -362,6 +374,34 @@ export function mountApp(root: HTMLElement): void {
       });
 
     root
+      .querySelector<HTMLTextAreaElement>("#rleImport")
+      ?.addEventListener("input", (event) => {
+        rleImportText = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='import-rle']")
+      ?.addEventListener("click", () => {
+        rleImportText = root.querySelector<HTMLTextAreaElement>("#rleImport")?.value ?? "";
+        try {
+          const imported = importRleForSettings(rleImportText);
+          settings = normalizeAppSettings(imported.settings, {
+            comparisonRule: settings.comparisonRule,
+          });
+          visibleGenerations = settings.generations;
+          exportStatus = imported.status;
+          rleImportText = "";
+          history.replaceState(null, "", serializeSettingsQuery(settings));
+        } catch (error) {
+          exportStatus =
+            error instanceof Error
+              ? `RLE import failed: ${error.message}`
+              : "RLE import failed.";
+        }
+        render();
+      });
+
+    root
       .querySelector<HTMLButtonElement>("[data-action='download-png']")
       ?.addEventListener("click", async () => {
         try {
@@ -424,6 +464,17 @@ export async function copyRleForSettings(
   const rows = generateAutomaton(visibleSettings);
   const rle = exportPatternRle(rows, visibleSettings);
   await writeText(rle);
+}
+
+export function importRleForSettings(rleText: string): {
+  settings: AutomatonSettings;
+  status: string;
+} {
+  const settings = parseRuleloomRle(rleText);
+  return {
+    settings,
+    status: `Imported Rule ${settings.rule}, ${settings.width} cells, ${settings.generations} rows from RLE.`
+  };
 }
 
 export async function downloadPngForSettings(

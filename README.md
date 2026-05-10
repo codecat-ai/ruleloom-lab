@@ -22,6 +22,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Copy text action for portable monospaced pattern exports with rule, width, generation, seed, and boundary metadata.
 - Copy SVG action for standalone pattern snapshots.
 - Copy RLE action for deterministic Life/RLE-style text exports of the currently visible generations.
+- Paste RLE import action for restoring Ruleloom RLE exports into editable custom seed settings.
 - Download PNG action for local pattern snapshots of the currently visible generations.
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
 - Pure deterministic engine exported from `src/automata.ts`.
@@ -29,6 +30,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
 - Deterministic RLE-like pattern exporter in `src/rleExport.ts`.
+- Pure Ruleloom RLE import parser in `src/rleImport.ts`.
 - Deterministic PNG export helper in `src/pngExport.ts` with injectable canvas encoding for unit tests.
 
 ## Installation
@@ -57,6 +59,8 @@ Use keyboard shortcuts when focus is not inside a form control: Space for Run/Pa
 
 Use Download PNG to save a local snapshot of the currently visible generations. PNG export runs in the browser with no uploads.
 
+Use Paste Ruleloom RLE and Import RLE to restore a copied Ruleloom RLE export locally. The import reads the Ruleloom `W<number>` header, width, visible generation count, boundary metadata, and custom seed metadata when present; otherwise it derives the custom seed from the first decoded row.
+
 ## Examples
 
 Restore a deterministic Rule 90 exploration from a URL query string:
@@ -73,6 +77,19 @@ Set the main rule to `30` and Compare with rule to `90` to see a deterministic d
 
 Step to a partial run, then use Download PNG to capture only the visible rows as a filename-safe snapshot such as `ruleloom-rule-90-w61-g12-center-fixed.png`.
 
+Copy RLE and later paste it back into Import RLE to continue editing from the saved rule, width, visible rows, boundary mode, and custom seed:
+
+```text
+# Ruleloom Lab
+# rule: 90
+# width: 15
+# generations: 3
+# seed mode: center
+# boundary mode: fixed
+x = 15, y = 3, rule = W90
+7bo7b$6bobo6b$5bo3bo5b!
+```
+
 ## Configuration
 
 The app is configured in the browser UI or with URL query parameters:
@@ -86,6 +103,8 @@ The app is configured in the browser UI or with URL query parameters:
 - `customSeed`: bit string used when `seed=custom`.
 
 Invalid numeric values are clamped to the supported ranges. Missing boundary settings use `fixed` for backward compatibility.
+
+RLE import accepts Ruleloom's own deterministic text exports only. It decodes `b`, `o`, numeric run counts, `$` row separators, and the final `!` terminator, then applies the result as `seed=custom` with `boundary=fixed` unless the export metadata says `wrap`.
 
 ## Development
 
@@ -101,7 +120,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -110,7 +129,7 @@ npm test -- --run
 ## Roadmap
 
 - Add shareable gallery examples in documentation.
-- Add import support for saved text or RLE pattern files.
+- Add more classroom-ready walkthroughs for comparing rules and boundary modes.
 
 ## Contributing
 

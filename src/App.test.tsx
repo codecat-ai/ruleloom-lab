@@ -6,6 +6,7 @@ import {
   createAppHtml,
   downloadPngForSettings,
   getPresetExplanations,
+  importRleForSettings,
   resolveKeyboardShortcut,
 } from "./App";
 import type { PngCanvasFactory } from "./pngExport";
@@ -57,6 +58,9 @@ describe("App", () => {
     expect(html).toContain("Copy SVG");
     expect(html).toContain('data-action="copy-rle"');
     expect(html).toContain("Copy RLE");
+    expect(html).toContain('id="rleImport"');
+    expect(html).toContain('data-action="import-rle"');
+    expect(html).toContain("Import RLE");
     expect(html).toContain('data-action="download-png"');
     expect(html).toContain("Download PNG");
     expect(html).toContain('aria-label="Export status"');
@@ -261,6 +265,29 @@ boundary: fixed
 # boundary mode: fixed
 x = 15, y = 3, rule = W90
 7bo7b$6bobo6b$5bo3bo5b!`);
+  });
+
+  it("imports pasted RLE text as custom editable settings", () => {
+    expect(
+      importRleForSettings(`# Ruleloom Lab
+# rule: 90
+# width: 15
+# generations: 3
+# seed mode: center
+# boundary mode: fixed
+x = 15, y = 3, rule = W90
+7bo7b$6bobo6b$5bo3bo5b!`)
+    ).toEqual({
+      settings: {
+        rule: 90,
+        width: 15,
+        generations: 3,
+        seedMode: "custom",
+        boundaryMode: "fixed",
+        customSeed: "000000010000000"
+      },
+      status: "Imported Rule 90, 15 cells, 3 rows from RLE."
+    });
   });
 
   it("downloads PNG for the current visible generations", async () => {

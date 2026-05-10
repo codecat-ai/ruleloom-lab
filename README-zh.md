@@ -22,6 +22,7 @@ Ruleloom Lab 是一个本地优先的浏览器初等元胞自动机游乐场：�
 - 提供复制文本操作，可导出便携的等宽文本图案，并包含规则、宽度、代数、种子和边界元数据。
 - 提供复制 SVG 操作，用于独立的图案快照。
 - 提供复制 RLE 操作，可为当前可见代数导出确定性的 Life/RLE 风格文本。
+- 提供粘贴 RLE 导入操作，可将 Ruleloom RLE 导出恢复为可编辑的自定义种子设置。
 - 提供下载 PNG 操作，可为当前可见代数保存本地图案快照。
 - 内置 Rule 30、Rule 90、Rule 110 和 Rule 184 预设，并为学习者提供简短解释。
 - 在 `src/automata.ts` 中导出纯确定性引擎。
@@ -29,6 +30,7 @@ Ruleloom Lab 是一个本地优先的浏览器初等元胞自动机游乐场：�
 - 在 `src/textExport.ts` 中提供确定性的纯文本图案导出器。
 - 在 `src/svgExport.ts` 中提供确定性的 SVG 图案导出器。
 - 在 `src/rleExport.ts` 中提供确定性的类 RLE 图案导出器。
+- 在 `src/rleImport.ts` 中提供纯 Ruleloom RLE 导入解析器。
 - 在 `src/pngExport.ts` 中提供确定性的 PNG 导出辅助函数，并通过可注入的画布编码支持单元测试。
 
 ## 安装
@@ -57,6 +59,8 @@ npm run dev
 
 使用 Download PNG 可保存当前可见代数的本地快照。PNG 导出在浏览器内完成，不会上传。
 
+使用 Paste Ruleloom RLE 和 Import RLE 可在本地恢复已复制的 Ruleloom RLE 导出。导入会读取 Ruleloom `W<number>` 头、宽度、可见代数、边界元数据和自定义种子元数据；如果没有自定义种子元数据，则从第一行解码结果派生自定义种子。
+
 ## 示例
 
 通过 URL 查询字符串恢复一个确定性的 Rule 90 探索：
@@ -73,6 +77,19 @@ npm run dev
 
 先单步到部分运行状态，再使用 Download PNG，即可只捕获当前可见行，并生成安全文件名，例如 `ruleloom-rule-90-w61-g12-center-fixed.png`。
 
+复制 RLE 后，稍后可将其粘贴回 Import RLE，继续编辑保存的规则、宽度、可见行数、边界模式和自定义种子：
+
+```text
+# Ruleloom Lab
+# rule: 90
+# width: 15
+# generations: 3
+# seed mode: center
+# boundary mode: fixed
+x = 15, y = 3, rule = W90
+7bo7b$6bobo6b$5bo3bo5b!
+```
+
 ## 配置
 
 应用可以通过浏览器界面或 URL 查询参数配置：
@@ -86,6 +103,8 @@ npm run dev
 - `customSeed`：在 `seed=custom` 时使用的位字符串。
 
 无效数字会被限制到支持范围内。缺少边界设置时会使用 `fixed`，以保持向后兼容。
+
+RLE 导入只接受 Ruleloom 自身的确定性文本导出。它会解码 `b`、`o`、数字游程计数、`$` 行分隔符和最终的 `!` 终止符，然后以 `seed=custom` 应用结果；除非导出元数据声明 `wrap`，否则边界使用 `fixed`。
 
 ## 开发
 
@@ -101,7 +120,7 @@ npm run build
 
 ## 测试
 
-Ruleloom Lab 使用 Vitest 编写面向行为的测试，覆盖规则解码、固定和环绕边界生成、确定性种子、规则比较汇总、URL 查询辅助函数、预设解释、键盘快捷键、纯文本导出、SVG 导出、类 RLE 导出、PNG 导出渲染与文件名、剪贴板/下载行为和渲染出的 HTML 结构。
+Ruleloom Lab 使用 Vitest 编写面向行为的测试，覆盖规则解码、固定和环绕边界生成、确定性种子、规则比较汇总、URL 查询辅助函数、预设解释、键盘快捷键、纯文本导出、SVG 导出、类 RLE 导出与导入、PNG 导出渲染与文件名、剪贴板/下载行为和渲染出的 HTML 结构。
 
 ```bash
 npm test -- --run
@@ -110,7 +129,7 @@ npm test -- --run
 ## 路线图
 
 - 在文档中添加可分享的示例图库。
-- 添加对已保存文本或 RLE 图案文件的导入支持。
+- 添加更多面向课堂的规则比较和边界模式演练。
 
 ## 贡献
 

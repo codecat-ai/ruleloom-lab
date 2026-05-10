@@ -21,7 +21,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -78,6 +79,7 @@ h1 {
 .actions,
 .preset-explanations,
 .comparison-summary,
+.rle-import,
 .layout {
   margin: 0 auto 18px;
   max-width: 1180px;
@@ -101,12 +103,38 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   background: #ffffff;
   border: 1px solid #b8c4ce;
   border-radius: 8px;
   min-height: 40px;
   padding: 8px 10px;
+}
+
+.rle-import {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.rle-import textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.rle-import button {
+  background: #ffffff;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.rle-import button:hover {
+  border-color: #5a6b3f;
 }
 
 .comparison-summary {
@@ -246,5 +274,9 @@ select {
 
   .wide {
     grid-column: auto;
+  }
+
+  .rle-import {
+    grid-template-columns: 1fr;
   }
 }

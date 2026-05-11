@@ -14,6 +14,11 @@ import {
   parseSettingsQuery,
   serializeSettingsQuery,
 } from "./share";
+import {
+  applyGalleryExample,
+  GALLERY_EXAMPLES,
+  type GalleryAppliedSettings,
+} from "./gallery";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
 import { parseRuleloomRle } from "./rleImport";
@@ -70,6 +75,10 @@ interface AppSettings extends AutomatonSettings {
 
 export function getPresetExplanations(): Array<(typeof PRESETS)[number]> {
   return [...PRESETS];
+}
+
+export function getGalleryExamples(): Array<(typeof GALLERY_EXAMPLES)[number]> {
+  return [...GALLERY_EXAMPLES];
 }
 
 export function resolveKeyboardShortcut(
@@ -203,6 +212,25 @@ export function createAppHtml(
         ${PRESETS.map((preset) => `<article data-preset-explanation="${preset.rule}"><strong>${preset.label}</strong><span>${preset.explanation}</span></article>`).join("")}
       </section>
 
+      <section class="gallery-examples" aria-label="Gallery examples">
+        <div class="section-heading">
+          <h2>Gallery examples</h2>
+          <p>Apply a curated setup, then share or export it with the same local controls.</p>
+        </div>
+        <div class="gallery-grid">
+          ${GALLERY_EXAMPLES.map(
+            (example) => `<article data-gallery-example="${example.id}">
+              <div>
+                <strong>${escapeHtml(example.title)}</strong>
+                <p>${escapeHtml(example.description)}</p>
+                <span>${escapeHtml(example.lookFor)}</span>
+              </div>
+              <button type="button" data-gallery-apply="${example.id}">Apply</button>
+            </article>`,
+          ).join("")}
+        </div>
+      </section>
+
       <section class="layout">
         <table class="rule-table" aria-label="Rule table">
           <thead>
@@ -267,6 +295,15 @@ export function mountApp(root: HTMLElement): void {
     render();
   };
 
+  const applyGallery = (exampleId: string) => {
+    stop();
+    const applied = resolveGalleryApply(settings, visibleGenerations, exampleId);
+    settings = applied.settings;
+    visibleGenerations = applied.visibleGenerations;
+    history.replaceState(null, "", applied.shareQuery);
+    render();
+  };
+
   const step = () => {
     visibleGenerations = Math.min(MAX_GENERATIONS, visibleGenerations + 1);
     render();
@@ -327,6 +364,14 @@ export function mountApp(root: HTMLElement): void {
       .forEach((button) => {
         button.addEventListener("click", () => {
           applyPreset(Number(button.dataset.preset));
+        });
+      });
+
+    root
+      .querySelectorAll<HTMLButtonElement>("[data-gallery-apply]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          applyGallery(button.dataset.galleryApply ?? "");
         });
       });
 
@@ -474,6 +519,24 @@ export function importRleForSettings(rleText: string): {
   return {
     settings,
     status: `Imported Rule ${settings.rule}, ${settings.width} cells, ${settings.generations} rows from RLE.`
+  };
+}
+
+export function resolveGalleryApply(
+  settings: GalleryAppliedSettings,
+  _visibleGenerations: number,
+  exampleId: string,
+): {
+  settings: GalleryAppliedSettings;
+  visibleGenerations: number;
+  shareQuery: string;
+} {
+  const applied = applyGalleryExample(settings, exampleId);
+
+  return {
+    settings: applied,
+    visibleGenerations: 1,
+    shareQuery: serializeSettingsQuery(applied),
   };
 }
 

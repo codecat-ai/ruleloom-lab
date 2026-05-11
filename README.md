@@ -25,7 +25,9 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Paste RLE import action for restoring Ruleloom RLE exports into editable custom seed settings.
 - Download PNG action for local pattern snapshots of the currently visible generations.
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
+- Product-shaped Gallery examples section with four curated, apply-ready local setups, including wrapped-boundary and custom-seed cases.
 - Pure deterministic engine exported from `src/automata.ts`.
+- Pure curated gallery metadata and apply helper exported from `src/gallery.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
@@ -61,6 +63,8 @@ Use Download PNG to save a local snapshot of the currently visible generations. 
 
 Use Paste Ruleloom RLE and Import RLE to restore a copied Ruleloom RLE export locally. The import reads the Ruleloom `W<number>` header, width, visible generation count, boundary metadata, and custom seed metadata when present; otherwise it derives the custom seed from the first decoded row.
 
+Use Gallery examples to apply a complete curated setup. Each card updates the rule, width, generations, seed mode, seed value, boundary mode, and comparison rule when provided, then resets the visible playback to the first row so you can watch the pattern unfold.
+
 ## Examples
 
 Restore a deterministic Rule 90 exploration from a URL query string:
@@ -70,6 +74,8 @@ Restore a deterministic Rule 90 exploration from a URL query string:
 ```
 
 Try the Rule 30 preset for chaotic pseudo-random growth, Rule 90 for nested Sierpinski triangles, Rule 110 for computationally universal behavior, or Rule 184 for traffic-flow movement. The app shows these explanations next to the preset controls.
+
+Apply Sierpinski lattice for a clean Rule 90 center-seed fractal, Wrapped traffic loop for Rule 184 with circular edges, Rule 30 noise field for repeatable deterministic disorder, or Custom seed lanes for a hand-shaped Rule 110 start.
 
 Switch `boundary=wrap` in a share URL to make the left and right edges read each other as neighbors.
 
@@ -120,7 +126,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata and apply behavior, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -128,8 +134,8 @@ npm test -- --run
 
 ## Roadmap
 
-- Add shareable gallery examples in documentation.
-- Add more classroom-ready walkthroughs for comparing rules and boundary modes.
+- Add gallery filters for seed type, boundary mode, and classroom difficulty.
+- Add more classroom-ready walkthroughs for comparing rules, gallery examples, and boundary modes.
 
 ## Contributing
 

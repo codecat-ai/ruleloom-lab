@@ -5,7 +5,9 @@ import {
   copyTextForSettings,
   createAppHtml,
   downloadPngForSettings,
+  getGalleryExamples,
   getPresetExplanations,
+  resolveGalleryApply,
   importRleForSettings,
   resolveKeyboardShortcut,
 } from "./App";
@@ -165,6 +167,52 @@ describe("App", () => {
         html.indexOf(`data-preset-explanation="${preset.rule}"`),
       );
     }
+  });
+
+  it("renders gallery examples with apply buttons and observation copy", () => {
+    const html = createAppHtml();
+
+    expect(html).toContain('class="gallery-examples"');
+    expect(html).toContain("Gallery examples");
+    for (const example of getGalleryExamples()) {
+      expect(html).toContain(`data-gallery-example="${example.id}"`);
+      expect(html).toContain(`<strong>${example.title}</strong>`);
+      expect(html).toContain(example.description);
+      expect(html).toContain(example.lookFor);
+      expect(html).toContain("Apply");
+    }
+  });
+
+  it("applies gallery settings and resets visible playback state", () => {
+    expect(
+      resolveGalleryApply(
+        {
+          rule: 30,
+          width: 61,
+          generations: 80,
+          seedMode: "center",
+          boundaryMode: "fixed",
+          comparisonRule: 90,
+        },
+        42,
+        "custom-seed-glider-lanes",
+      ),
+    ).toEqual({
+      settings: {
+        rule: 110,
+        width: 73,
+        generations: 100,
+        seedMode: "custom",
+        boundaryMode: "fixed",
+        randomSeed: 1,
+        customSeed:
+          "0000000000000000000000000000000011101000100111000000000000000000000000000",
+        comparisonRule: 54,
+      },
+      visibleGenerations: 1,
+      shareQuery:
+        "?rule=110&width=73&steps=100&seed=custom&boundary=fixed&randomSeed=1&customSeed=0000000000000000000000000000000011101000100111000000000000000000000000000",
+    });
   });
 
   it("shows rule table neighborhoods from 111 to 000", () => {

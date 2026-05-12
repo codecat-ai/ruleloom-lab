@@ -16,8 +16,11 @@ import {
 } from "./share";
 import {
   applyGalleryExample,
+  filterGalleryExamples,
   GALLERY_EXAMPLES,
   type GalleryAppliedSettings,
+  type GalleryDifficulty,
+  type GalleryFilters,
 } from "./gallery";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
@@ -78,7 +81,7 @@ export function getPresetExplanations(): Array<(typeof PRESETS)[number]> {
 }
 
 export function getGalleryExamples(): Array<(typeof GALLERY_EXAMPLES)[number]> {
-  return [...GALLERY_EXAMPLES];
+  return filterGalleryExamples();
 }
 
 export function resolveKeyboardShortcut(
@@ -109,8 +112,11 @@ export function createAppHtml(
   settings: AutomatonSettings | AppSettings = DEFAULT_SETTINGS,
   exportStatus = "",
   rleImportText = "",
+  galleryFilters: GalleryFilters = {},
 ): string {
   const appSettings = normalizeAppSettings(settings);
+  const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
+  const galleryExamples = filterGalleryExamples(normalizedGalleryFilters);
   const rows = generateAutomaton(appSettings);
   const ruleTable = decodeRule(appSettings.rule);
   const comparison = compareRules({
@@ -217,17 +223,46 @@ export function createAppHtml(
           <h2>Gallery examples</h2>
           <p>Apply a curated setup, then share or export it with the same local controls.</p>
         </div>
+        <div class="gallery-filters" aria-label="Gallery filters">
+          <label for="gallerySeedMode">
+            Seed filter
+            <select id="gallerySeedMode" data-gallery-filter="seedMode">
+              ${selectOption("all", "All seeds", normalizedGalleryFilters.seedMode)}
+              ${selectOption("center", "Center", normalizedGalleryFilters.seedMode)}
+              ${selectOption("random", "Random", normalizedGalleryFilters.seedMode)}
+              ${selectOption("custom", "Custom", normalizedGalleryFilters.seedMode)}
+            </select>
+          </label>
+          <label for="galleryBoundaryMode">
+            Boundary filter
+            <select id="galleryBoundaryMode" data-gallery-filter="boundaryMode">
+              ${selectOption("all", "All boundaries", normalizedGalleryFilters.boundaryMode)}
+              ${selectOption("fixed", "Fixed", normalizedGalleryFilters.boundaryMode)}
+              ${selectOption("wrap", "Wrapped", normalizedGalleryFilters.boundaryMode)}
+            </select>
+          </label>
+          <label for="galleryDifficulty">
+            Difficulty
+            <select id="galleryDifficulty" data-gallery-filter="difficulty">
+              ${selectOption("all", "All levels", normalizedGalleryFilters.difficulty)}
+              ${selectOption("beginner", "Beginner", normalizedGalleryFilters.difficulty)}
+              ${selectOption("intermediate", "Intermediate", normalizedGalleryFilters.difficulty)}
+              ${selectOption("advanced", "Advanced", normalizedGalleryFilters.difficulty)}
+            </select>
+          </label>
+        </div>
         <div class="gallery-grid">
-          ${GALLERY_EXAMPLES.map(
+          ${galleryExamples.length > 0 ? galleryExamples.map(
             (example) => `<article data-gallery-example="${example.id}">
               <div>
                 <strong>${escapeHtml(example.title)}</strong>
+                <small>${galleryDifficultyLabel(example.difficulty)}</small>
                 <p>${escapeHtml(example.description)}</p>
                 <span>${escapeHtml(example.lookFor)}</span>
               </div>
               <button type="button" data-gallery-apply="${example.id}">Apply</button>
             </article>`,
-          ).join("")}
+          ).join("") : `<p class="gallery-empty" role="status">No gallery examples match these filters yet.</p>`}
         </div>
       </section>
 
@@ -262,6 +297,7 @@ export function mountApp(root: HTMLElement): void {
   let visibleGenerations = settings.generations;
   let exportStatus = "";
   let rleImportText = "";
+  let galleryFilters = normalizeGalleryFilters();
   let timer: number | undefined;
 
   const render = () => {
@@ -269,6 +305,7 @@ export function mountApp(root: HTMLElement): void {
       { ...settings, generations: visibleGenerations },
       exportStatus,
       rleImportText,
+      galleryFilters,
     );
     bindEvents();
   };
@@ -356,7 +393,19 @@ export function mountApp(root: HTMLElement): void {
     root
       .querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select")
       .forEach((control) => {
+        if (control.hasAttribute("data-gallery-filter")) {
+          return;
+        }
         control.addEventListener("change", updateFromControls);
+      });
+
+    root
+      .querySelectorAll<HTMLSelectElement>("[data-gallery-filter]")
+      .forEach((control) => {
+        control.addEventListener("change", () => {
+          galleryFilters = readGalleryFilters(root);
+          render();
+        });
       });
 
     root
@@ -634,6 +683,39 @@ function boundaryModeLabel(
   boundaryMode: AutomatonSettings["boundaryMode"],
 ): string {
   return boundaryMode === "wrap" ? "Wrapped edges" : "Fixed zero edges";
+}
+
+function galleryDifficultyLabel(difficulty: GalleryDifficulty): string {
+  if (difficulty === "beginner") {
+    return "Beginner";
+  }
+
+  if (difficulty === "intermediate") {
+    return "Intermediate";
+  }
+
+  return "Advanced";
+}
+
+function readGalleryFilters(root: HTMLElement): Required<GalleryFilters> {
+  return normalizeGalleryFilters({
+    seedMode: root.querySelector<HTMLSelectElement>("#gallerySeedMode")
+      ?.value as GalleryFilters["seedMode"],
+    boundaryMode: root.querySelector<HTMLSelectElement>("#galleryBoundaryMode")
+      ?.value as GalleryFilters["boundaryMode"],
+    difficulty: root.querySelector<HTMLSelectElement>("#galleryDifficulty")
+      ?.value as GalleryFilters["difficulty"],
+  });
+}
+
+function normalizeGalleryFilters(
+  filters: GalleryFilters = {},
+): Required<GalleryFilters> {
+  return {
+    seedMode: filters.seedMode ?? "all",
+    boundaryMode: filters.boundaryMode ?? "all",
+    difficulty: filters.difficulty ?? "all",
+  };
 }
 
 function normalizeAppSettings(

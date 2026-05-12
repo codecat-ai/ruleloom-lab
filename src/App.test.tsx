@@ -174,6 +174,12 @@ describe("App", () => {
 
     expect(html).toContain('class="gallery-examples"');
     expect(html).toContain("Gallery examples");
+    expect(html).toContain('for="gallerySeedMode"');
+    expect(html).toContain("Seed filter");
+    expect(html).toContain('for="galleryBoundaryMode"');
+    expect(html).toContain("Boundary filter");
+    expect(html).toContain('for="galleryDifficulty"');
+    expect(html).toContain("Difficulty");
     for (const example of getGalleryExamples()) {
       expect(html).toContain(`data-gallery-example="${example.id}"`);
       expect(html).toContain(`<strong>${example.title}</strong>`);
@@ -181,6 +187,33 @@ describe("App", () => {
       expect(html).toContain(example.lookFor);
       expect(html).toContain("Apply");
     }
+  });
+
+  it("renders only gallery cards matching selected filters", () => {
+    const html = createAppHtml(undefined, "", "", {
+      seedMode: "random",
+      boundaryMode: "fixed",
+      difficulty: "intermediate",
+    });
+
+    expect(html).toContain('value="random" selected');
+    expect(html).toContain('data-gallery-example="rule-30-random-field"');
+    expect(html).not.toContain('data-gallery-example="wrapped-traffic-loop"');
+    expect(html).not.toContain('data-gallery-example="sierpinski-center"');
+    expect(html).not.toContain('data-gallery-example="custom-seed-glider-lanes"');
+    expect(html).toContain('data-gallery-apply="rule-30-random-field"');
+  });
+
+  it("renders a friendly empty gallery state when filters have no matches", () => {
+    const html = createAppHtml(undefined, "", "", {
+      seedMode: "center",
+      boundaryMode: "wrap",
+      difficulty: "advanced",
+    });
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain("No gallery examples match these filters yet.");
+    expect(html).not.toContain("data-gallery-apply=");
   });
 
   it("applies gallery settings and resets visible playback state", () => {

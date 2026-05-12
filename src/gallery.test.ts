@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyGalleryExample,
+  filterGalleryExamples,
   GALLERY_EXAMPLES,
   getGalleryExampleById,
 } from "./gallery";
@@ -67,5 +68,60 @@ describe("gallery examples", () => {
       customSeed: "",
       comparisonRule: 90,
     });
+  });
+
+  it("filters gallery examples by seed mode", () => {
+    expect(
+      filterGalleryExamples({ seedMode: "random" }).map(
+        (example) => example.id,
+      ),
+    ).toEqual(["wrapped-traffic-loop", "rule-30-random-field"]);
+  });
+
+  it("filters gallery examples by boundary mode", () => {
+    expect(
+      filterGalleryExamples({ boundaryMode: "wrap" }).map(
+        (example) => example.id,
+      ),
+    ).toEqual(["wrapped-traffic-loop"]);
+  });
+
+  it("filters gallery examples by classroom difficulty", () => {
+    expect(
+      filterGalleryExamples({ difficulty: "beginner" }).map(
+        (example) => example.id,
+      ),
+    ).toEqual(["sierpinski-center"]);
+  });
+
+  it("composes seed, boundary, and difficulty gallery filters", () => {
+    expect(
+      filterGalleryExamples({
+        seedMode: "random",
+        boundaryMode: "fixed",
+        difficulty: "intermediate",
+      }).map((example) => example.id),
+    ).toEqual(["rule-30-random-field"]);
+  });
+
+  it("leaves gallery order unchanged when every filter is all", () => {
+    const filtered = filterGalleryExamples({
+      seedMode: "all",
+      boundaryMode: "all",
+      difficulty: "all",
+    });
+
+    expect(filtered).toEqual(GALLERY_EXAMPLES);
+    expect(filtered).not.toBe(GALLERY_EXAMPLES);
+  });
+
+  it("returns an empty list when no gallery examples match", () => {
+    expect(
+      filterGalleryExamples({
+        seedMode: "center",
+        boundaryMode: "wrap",
+        difficulty: "advanced",
+      }),
+    ).toEqual([]);
   });
 });

@@ -6,6 +6,7 @@ export interface GalleryExample {
   title: string;
   description: string;
   lookFor: string;
+  difficulty: GalleryDifficulty;
   settings: AutomatonSettings;
   comparisonRule?: number;
 }
@@ -13,6 +14,16 @@ export interface GalleryExample {
 export type GalleryAppliedSettings = AutomatonSettings & {
   comparisonRule: number;
 };
+
+export type GalleryDifficulty = "beginner" | "intermediate" | "advanced";
+
+export type GalleryFilterValue<T extends string> = T | "all";
+
+export interface GalleryFilters {
+  seedMode?: GalleryFilterValue<AutomatonSettings["seedMode"]>;
+  boundaryMode?: GalleryFilterValue<AutomatonSettings["boundaryMode"]>;
+  difficulty?: GalleryFilterValue<GalleryDifficulty>;
+}
 
 export const GALLERY_EXAMPLES: readonly GalleryExample[] = [
   {
@@ -22,6 +33,7 @@ export const GALLERY_EXAMPLES: readonly GalleryExample[] = [
       "Rule 90 from a single center cell opens into a clean triangular fractal.",
     lookFor:
       "Watch how every gap repeats at smaller scales as the rows widen downward.",
+    difficulty: "beginner",
     settings: {
       rule: 90,
       width: 81,
@@ -39,6 +51,7 @@ export const GALLERY_EXAMPLES: readonly GalleryExample[] = [
       "Rule 184 with a deterministic random seed turns wrapped edges into a circular traffic lane.",
     lookFor:
       "Cars leaving one edge immediately re-enter from the other, revealing jams and gaps.",
+    difficulty: "intermediate",
     settings: {
       rule: 184,
       width: 61,
@@ -57,6 +70,7 @@ export const GALLERY_EXAMPLES: readonly GalleryExample[] = [
       "Rule 30 starts from a repeatable random row to show deterministic disorder.",
     lookFor:
       "Dense areas keep shedding uneven streaks even though the same seed always returns.",
+    difficulty: "intermediate",
     settings: {
       rule: 30,
       width: 95,
@@ -75,6 +89,7 @@ export const GALLERY_EXAMPLES: readonly GalleryExample[] = [
       "Rule 110 begins from a hand-shaped bit string that launches interacting lanes.",
     lookFor:
       "The seeded cluster splits into angled tracks, then collisions disturb the spacing.",
+    difficulty: "advanced",
     settings: {
       rule: 110,
       width: 73,
@@ -93,6 +108,18 @@ export function getGalleryExampleById(id: string): GalleryExample | undefined {
   return GALLERY_EXAMPLES.find((example) => example.id === id);
 }
 
+export function filterGalleryExamples(
+  filters: GalleryFilters = {},
+): GalleryExample[] {
+  return GALLERY_EXAMPLES.filter((example) => {
+    return (
+      matchesFilter(example.settings.seedMode, filters.seedMode) &&
+      matchesFilter(example.settings.boundaryMode, filters.boundaryMode) &&
+      matchesFilter(example.difficulty, filters.difficulty)
+    );
+  }).map(copyGalleryExample);
+}
+
 export function applyGalleryExample(
   current: GalleryAppliedSettings,
   exampleId: string,
@@ -109,5 +136,21 @@ export function applyGalleryExample(
       ...example.settings,
     }),
     comparisonRule: example.comparisonRule ?? current.comparisonRule,
+  };
+}
+
+function matchesFilter<T extends string>(
+  value: T,
+  filter: GalleryFilterValue<T> | undefined,
+): boolean {
+  return filter === undefined || filter === "all" || value === filter;
+}
+
+function copyGalleryExample(example: GalleryExample): GalleryExample {
+  return {
+    ...example,
+    settings: {
+      ...example.settings,
+    },
   };
 }

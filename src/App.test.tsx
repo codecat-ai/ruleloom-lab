@@ -6,10 +6,12 @@ import {
   createAppHtml,
   downloadPngForSettings,
   getGalleryExamples,
+  getLessonPaths,
   getPresetExplanations,
   resolveGalleryApply,
   importRleForSettings,
   resolveKeyboardShortcut,
+  resolveLessonPathApply,
 } from "./App";
 import type { PngCanvasFactory } from "./pngExport";
 
@@ -216,6 +218,32 @@ describe("App", () => {
     expect(html).not.toContain("data-gallery-apply=");
   });
 
+  it("renders lesson paths with prompts and accessible step apply controls", () => {
+    const html = createAppHtml();
+
+    expect(html).toContain('class="lesson-paths"');
+    expect(html).toContain("Lesson paths");
+    expect(html).toContain("Run a short guided sequence");
+    for (const path of getLessonPaths()) {
+      expect(html).toContain(`data-lesson-path="${path.id}"`);
+      expect(html).toContain(`<strong>${path.title}</strong>`);
+      expect(html).toContain(path.summary);
+      expect(html).toContain(`${path.estimatedMinutes} min`);
+      expect(html).toContain(path.audience);
+      path.steps.forEach((step, index) => {
+        expect(html).toContain(`data-lesson-path-apply="${path.id}"`);
+        expect(html).toContain(`data-lesson-step="${index}"`);
+        expect(html).toContain(step.prompt);
+        expect(html).toContain(
+          `aria-label="Apply ${path.title} step ${index + 1}"`,
+        );
+      });
+    }
+    expect(html.indexOf("Lesson paths")).toBeLessThan(
+      html.indexOf("Gallery examples"),
+    );
+  });
+
   it("applies gallery settings and resets visible playback state", () => {
     expect(
       resolveGalleryApply(
@@ -246,6 +274,53 @@ describe("App", () => {
       shareQuery:
         "?rule=110&width=73&steps=100&seed=custom&boundary=fixed&randomSeed=1&customSeed=0000000000000000000000000000000011101000100111000000000000000000000000000",
     });
+  });
+
+  it("applies lesson path step settings and resets visible playback state", () => {
+    expect(
+      resolveLessonPathApply(
+        {
+          rule: 30,
+          width: 61,
+          generations: 80,
+          seedMode: "center",
+          boundaryMode: "fixed",
+          comparisonRule: 90,
+        },
+        42,
+        "edges-change-the-story",
+        1,
+      ),
+    ).toEqual({
+      settings: {
+        rule: 184,
+        width: 61,
+        generations: 96,
+        seedMode: "random",
+        boundaryMode: "wrap",
+        randomSeed: 184184,
+        customSeed: "",
+        comparisonRule: 226,
+      },
+      visibleGenerations: 1,
+      shareQuery:
+        "?rule=184&width=61&steps=96&seed=random&boundary=wrap&randomSeed=184184",
+    });
+    expect(
+      resolveLessonPathApply(
+        {
+          rule: 30,
+          width: 61,
+          generations: 80,
+          seedMode: "center",
+          boundaryMode: "fixed",
+          comparisonRule: 90,
+        },
+        42,
+        "missing-path",
+        0,
+      ),
+    ).toBeNull();
   });
 
   it("shows rule table neighborhoods from 111 to 000", () => {

@@ -27,8 +27,10 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
 - Product-shaped Gallery examples section with four curated, apply-ready local setups, including wrapped-boundary and custom-seed cases.
 - Gallery filters for seed type, boundary mode, and classroom difficulty, with an empty state when no examples match.
+- Lesson paths that sequence existing gallery examples into named classroom investigations with estimated minutes and discussion prompts.
 - Pure deterministic engine exported from `src/automata.ts`.
 - Pure curated gallery metadata and apply helper exported from `src/gallery.ts`.
+- Pure lesson path metadata and safe step-application helpers exported from `src/lessonPaths.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
@@ -66,6 +68,8 @@ Use Paste Ruleloom RLE and Import RLE to restore a copied Ruleloom RLE export lo
 
 Use Gallery examples to apply a complete curated setup. Filter the cards by seed type, boundary mode, or classroom difficulty, then apply any visible example. Each card updates the rule, width, generations, seed mode, seed value, boundary mode, and comparison rule when provided, then resets the visible playback to the first row so you can watch the pattern unfold.
 
+Use Lesson paths when you want a short guided sequence instead of standalone cards. Each step applies an existing gallery setup, resets playback to the first row, and gives a discussion prompt for observation.
+
 ## Examples
 
 Restore a deterministic Rule 90 exploration from a URL query string:
@@ -79,6 +83,8 @@ Try the Rule 30 preset for chaotic pseudo-random growth, Rule 90 for nested Sier
 Apply Sierpinski lattice for a clean Rule 90 center-seed fractal, Wrapped traffic loop for Rule 184 with circular edges, Rule 30 noise field for repeatable deterministic disorder, or Custom seed lanes for a hand-shaped Rule 110 start.
 
 Filter Gallery examples to find a beginner center-seed activity, an intermediate fixed-boundary random-seed activity, or an advanced custom-seed activity for a classroom sequence.
+
+Run Patterns from one spark for a 12-minute path from Rule 90 center seed to Rule 30 deterministic noise and Rule 110 custom lanes. Run Edges change the story for a 10-minute boundary-focused path from fixed edges to wrapped traffic.
 
 Switch `boundary=wrap` in a share URL to make the left and right edges read each other as neighbors.
 
@@ -129,7 +135,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -137,8 +143,9 @@ npm test -- --run
 
 ## Roadmap
 
-- Add saved lesson paths that sequence gallery examples into short classroom investigations.
 - Add printable teacher notes for comparing rules, seeds, and boundary modes.
+- Add import/export for local lesson path packs without accounts or cloud sync.
+- Add a compact projector mode for facilitators running live classroom explorations.
 
 ## Contributing
 

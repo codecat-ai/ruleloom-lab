@@ -78,6 +78,7 @@ h1 {
 .controls,
 .actions,
 .preset-explanations,
+.lesson-paths,
 .gallery-examples,
 .comparison-summary,
 .rle-import,
@@ -219,6 +220,11 @@ textarea {
   gap: 12px;
 }
 
+.lesson-paths {
+  display: grid;
+  gap: 12px;
+}
+
 .section-heading {
   align-items: end;
   display: flex;
@@ -242,6 +248,84 @@ textarea {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.lesson-path-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.lesson-path-grid article {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.lesson-path-header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.lesson-path-header strong {
+  color: #1f2933;
+}
+
+.lesson-path-header span {
+  color: #5a6b3f;
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.lesson-path-grid p {
+  color: #52606d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.lesson-path-grid ol {
+  display: grid;
+  gap: 10px;
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
+
+.lesson-path-grid li {
+  border-top: 1px solid #edf1f5;
+  color: #52606d;
+  display: grid;
+  gap: 8px;
+  line-height: 1.4;
+  padding-top: 10px;
+}
+
+.lesson-path-grid li span {
+  font-size: 0.9rem;
+}
+
+.lesson-path-grid button {
+  background: #1f2933;
+  border: 1px solid #1f2933;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  justify-self: start;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.lesson-path-grid button:hover {
+  background: #3e4c59;
+  border-color: #3e4c59;
 }
 
 .gallery-filters {

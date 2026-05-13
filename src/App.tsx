@@ -22,6 +22,11 @@ import {
   type GalleryDifficulty,
   type GalleryFilters,
 } from "./gallery";
+import {
+  applyLessonPathStep,
+  listLessonPaths,
+  type LessonPath,
+} from "./lessonPaths";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
 import { parseRuleloomRle } from "./rleImport";
@@ -84,6 +89,10 @@ export function getGalleryExamples(): Array<(typeof GALLERY_EXAMPLES)[number]> {
   return filterGalleryExamples();
 }
 
+export function getLessonPaths(): LessonPath[] {
+  return listLessonPaths();
+}
+
 export function resolveKeyboardShortcut(
   input: KeyboardShortcutInput,
 ): KeyboardShortcutAction | undefined {
@@ -117,6 +126,7 @@ export function createAppHtml(
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
   const galleryExamples = filterGalleryExamples(normalizedGalleryFilters);
+  const lessonPaths = listLessonPaths();
   const rows = generateAutomaton(appSettings);
   const ruleTable = decodeRule(appSettings.rule);
   const comparison = compareRules({
@@ -216,6 +226,28 @@ export function createAppHtml(
 
       <section class="preset-explanations" aria-label="Preset explanations">
         ${PRESETS.map((preset) => `<article data-preset-explanation="${preset.rule}"><strong>${preset.label}</strong><span>${preset.explanation}</span></article>`).join("")}
+      </section>
+
+      <section class="lesson-paths" aria-label="Lesson paths">
+        <div class="section-heading">
+          <h2>Lesson paths</h2>
+          <p>Run a short guided sequence of gallery examples with prompts for learners and facilitators.</p>
+        </div>
+        <div class="lesson-path-grid">
+          ${lessonPaths.map((path) => `<article data-lesson-path="${path.id}">
+            <div class="lesson-path-header">
+              <strong>${escapeHtml(path.title)}</strong>
+              <span>${path.estimatedMinutes} min · ${escapeHtml(path.audience)}</span>
+            </div>
+            <p>${escapeHtml(path.summary)}</p>
+            <ol>
+              ${path.steps.map((step, index) => `<li>
+                <span>${escapeHtml(step.prompt)}</span>
+                <button type="button" data-lesson-path-apply="${path.id}" data-lesson-step="${index}" aria-label="Apply ${escapeHtml(path.title)} step ${index + 1}">Apply step ${index + 1}</button>
+              </li>`).join("")}
+            </ol>
+          </article>`).join("")}
+        </div>
       </section>
 
       <section class="gallery-examples" aria-label="Gallery examples">
@@ -341,6 +373,25 @@ export function mountApp(root: HTMLElement): void {
     render();
   };
 
+  const applyLessonPath = (pathId: string, stepIndex: number) => {
+    stop();
+    const applied = resolveLessonPathApply(
+      settings,
+      visibleGenerations,
+      pathId,
+      stepIndex,
+    );
+
+    if (!applied) {
+      return;
+    }
+
+    settings = applied.settings;
+    visibleGenerations = applied.visibleGenerations;
+    history.replaceState(null, "", applied.shareQuery);
+    render();
+  };
+
   const step = () => {
     visibleGenerations = Math.min(MAX_GENERATIONS, visibleGenerations + 1);
     render();
@@ -421,6 +472,17 @@ export function mountApp(root: HTMLElement): void {
       .forEach((button) => {
         button.addEventListener("click", () => {
           applyGallery(button.dataset.galleryApply ?? "");
+        });
+      });
+
+    root
+      .querySelectorAll<HTMLButtonElement>("[data-lesson-path-apply]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          applyLessonPath(
+            button.dataset.lessonPathApply ?? "",
+            Number(button.dataset.lessonStep),
+          );
         });
       });
 
@@ -581,6 +643,29 @@ export function resolveGalleryApply(
   shareQuery: string;
 } {
   const applied = applyGalleryExample(settings, exampleId);
+
+  return {
+    settings: applied,
+    visibleGenerations: 1,
+    shareQuery: serializeSettingsQuery(applied),
+  };
+}
+
+export function resolveLessonPathApply(
+  _settings: GalleryAppliedSettings,
+  _visibleGenerations: number,
+  pathId: string,
+  stepIndex: number,
+): {
+  settings: GalleryAppliedSettings;
+  visibleGenerations: number;
+  shareQuery: string;
+} | null {
+  const applied = applyLessonPathStep(pathId, stepIndex);
+
+  if (!applied) {
+    return null;
+  }
 
   return {
     settings: applied,

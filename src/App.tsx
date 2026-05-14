@@ -37,6 +37,12 @@ import {
   type PngCanvasFactory,
   type PngExportPayload,
 } from "./pngExport";
+import {
+  formatTeacherNotesHtml,
+  printTeacherNotes,
+  type TeacherNotesContext,
+  type TeacherNotesPrintOptions,
+} from "./teacherNotes";
 import "./App.css";
 
 const PRESETS = [
@@ -80,6 +86,12 @@ interface KeyboardShortcutInput {
 interface AppSettings extends AutomatonSettings {
   comparisonRule: number;
 }
+
+const DEFAULT_TEACHER_NOTE_PROMPTS = [
+  "Which neighborhoods produce live cells, and how do those choices shape growth?",
+  "Where do the compared rules first diverge under the same seed and boundary mode?",
+  "How does changing the boundary mode affect evidence at the edges?",
+] as const;
 
 export function getPresetExplanations(): Array<(typeof PRESETS)[number]> {
   return [...PRESETS];
@@ -220,6 +232,7 @@ export function createAppHtml(
         <button type="button" data-action="copy-svg">Copy SVG</button>
         <button type="button" data-action="copy-rle">Copy RLE</button>
         <button type="button" data-action="download-png">Download PNG</button>
+        <button type="button" data-action="print-teacher-notes">Print teacher notes</button>
         <p class="export-status" aria-live="polite" aria-label="Export status">${escapeHtml(exportStatus)}</p>
         <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
       </section>
@@ -234,19 +247,27 @@ export function createAppHtml(
           <p>Run a short guided sequence of gallery examples with prompts for learners and facilitators.</p>
         </div>
         <div class="lesson-path-grid">
-          ${lessonPaths.map((path) => `<article data-lesson-path="${path.id}">
+          ${lessonPaths
+            .map(
+              (path) => `<article data-lesson-path="${path.id}">
             <div class="lesson-path-header">
               <strong>${escapeHtml(path.title)}</strong>
               <span>${path.estimatedMinutes} min · ${escapeHtml(path.audience)}</span>
             </div>
             <p>${escapeHtml(path.summary)}</p>
             <ol>
-              ${path.steps.map((step, index) => `<li>
+              ${path.steps
+                .map(
+                  (step, index) => `<li>
                 <span>${escapeHtml(step.prompt)}</span>
                 <button type="button" data-lesson-path-apply="${path.id}" data-lesson-step="${index}" aria-label="Apply ${escapeHtml(path.title)} step ${index + 1}">Apply step ${index + 1}</button>
-              </li>`).join("")}
+              </li>`,
+                )
+                .join("")}
             </ol>
-          </article>`).join("")}
+          </article>`,
+            )
+            .join("")}
         </div>
       </section>
 
@@ -284,8 +305,11 @@ export function createAppHtml(
           </label>
         </div>
         <div class="gallery-grid">
-          ${galleryExamples.length > 0 ? galleryExamples.map(
-            (example) => `<article data-gallery-example="${example.id}">
+          ${
+            galleryExamples.length > 0
+              ? galleryExamples
+                  .map(
+                    (example) => `<article data-gallery-example="${example.id}">
               <div>
                 <strong>${escapeHtml(example.title)}</strong>
                 <small>${galleryDifficultyLabel(example.difficulty)}</small>
@@ -294,7 +318,10 @@ export function createAppHtml(
               </div>
               <button type="button" data-gallery-apply="${example.id}">Apply</button>
             </article>`,
-          ).join("") : `<p class="gallery-empty" role="status">No gallery examples match these filters yet.</p>`}
+                  )
+                  .join("")
+              : `<p class="gallery-empty" role="status">No gallery examples match these filters yet.</p>`
+          }
         </div>
       </section>
 
@@ -330,6 +357,8 @@ export function mountApp(root: HTMLElement): void {
   let exportStatus = "";
   let rleImportText = "";
   let galleryFilters = normalizeGalleryFilters();
+  let teacherNotesContext: TeacherNotesContext | undefined;
+  let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
   let timer: number | undefined;
 
   const render = () => {
@@ -360,15 +389,39 @@ export function mountApp(root: HTMLElement): void {
 
   const applyPreset = (rule: number) => {
     settings = { ...settings, rule };
+    const preset = PRESETS.find((candidate) => candidate.rule === rule);
+    teacherNotesContext = preset
+      ? {
+          source: "preset",
+          title: preset.label,
+          description: preset.explanation,
+        }
+      : undefined;
+    teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
     history.replaceState(null, "", serializeSettingsQuery(settings));
     render();
   };
 
   const applyGallery = (exampleId: string) => {
     stop();
-    const applied = resolveGalleryApply(settings, visibleGenerations, exampleId);
+    const applied = resolveGalleryApply(
+      settings,
+      visibleGenerations,
+      exampleId,
+    );
     settings = applied.settings;
     visibleGenerations = applied.visibleGenerations;
+    const example = GALLERY_EXAMPLES.find(
+      (candidate) => candidate.id === exampleId,
+    );
+    teacherNotesContext = example
+      ? {
+          source: "gallery",
+          title: example.title,
+          description: `${example.description} ${example.lookFor}`,
+        }
+      : undefined;
+    teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
     history.replaceState(null, "", applied.shareQuery);
     render();
   };
@@ -388,6 +441,19 @@ export function mountApp(root: HTMLElement): void {
 
     settings = applied.settings;
     visibleGenerations = applied.visibleGenerations;
+    const path = listLessonPaths().find((candidate) => candidate.id === pathId);
+    const step = path?.steps[stepIndex];
+    teacherNotesContext =
+      path && step
+        ? {
+            source: "lesson",
+            title: path.title,
+            description: `${path.summary} Current prompt: ${step.prompt}`,
+          }
+        : undefined;
+    teacherNotesPrompts = path
+      ? path.steps.map((lessonStep) => lessonStep.prompt)
+      : [...DEFAULT_TEACHER_NOTE_PROMPTS];
     history.replaceState(null, "", applied.shareQuery);
     render();
   };
@@ -538,7 +604,8 @@ export function mountApp(root: HTMLElement): void {
     root
       .querySelector<HTMLButtonElement>("[data-action='import-rle']")
       ?.addEventListener("click", () => {
-        rleImportText = root.querySelector<HTMLTextAreaElement>("#rleImport")?.value ?? "";
+        rleImportText =
+          root.querySelector<HTMLTextAreaElement>("#rleImport")?.value ?? "";
         try {
           const imported = importRleForSettings(rleImportText);
           settings = normalizeAppSettings(imported.settings, {
@@ -572,6 +639,21 @@ export function mountApp(root: HTMLElement): void {
           exportStatus =
             error instanceof Error ? error.message : "PNG export failed.";
         }
+        render();
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='print-teacher-notes']")
+      ?.addEventListener("click", () => {
+        const printed = printTeacherNotesForSettings(
+          settings,
+          visibleGenerations,
+          teacherNotesContext,
+          teacherNotesPrompts,
+        );
+        exportStatus = printed
+          ? "Prepared teacher notes for printing."
+          : "Teacher notes print window was blocked; copy from the generated notes in a new window is unavailable.";
         render();
       });
   };
@@ -622,6 +704,64 @@ export async function copyRleForSettings(
   await writeText(rle);
 }
 
+export function createTeacherNotesForSettings(
+  settings: AutomatonSettings & { comparisonRule?: number },
+  visibleGenerations: number,
+  context?: TeacherNotesContext,
+  prompts: string[] = [...DEFAULT_TEACHER_NOTE_PROMPTS],
+): string {
+  const appSettings = normalizeAppSettings(settings);
+  const visibleSettings = { ...appSettings, generations: visibleGenerations };
+  const rows = generateAutomaton(visibleSettings).map((row) =>
+    row.map((bit) => (bit === 1 ? "#" : ".")).join(""),
+  );
+  const ruleTable = decodeRule(visibleSettings.rule);
+  const comparison = compareRules({
+    primaryRule: visibleSettings.rule,
+    comparisonRule: appSettings.comparisonRule,
+    width: visibleSettings.width,
+    steps: visibleSettings.generations,
+    seed: comparisonSeedFromSettings(visibleSettings),
+    wrap: visibleSettings.boundaryMode === "wrap",
+  });
+
+  return formatTeacherNotesHtml({
+    settings: visibleSettings,
+    comparison: {
+      primaryRule: visibleSettings.rule,
+      comparisonRule: appSettings.comparisonRule,
+      firstDifferingGeneration: comparison.firstDifferingGeneration,
+      totalDifferingCells: comparison.totalDifferingCells,
+      differingCellsByGeneration: comparison.differingCellsByGeneration,
+    },
+    context,
+    ruleTable: neighborhoods().map((neighborhood) => ({
+      neighborhood,
+      result: ruleTable[neighborhood],
+    })),
+    rows,
+    prompts,
+  });
+}
+
+export function printTeacherNotesForSettings(
+  settings: AutomatonSettings & { comparisonRule?: number },
+  visibleGenerations: number,
+  context?: TeacherNotesContext,
+  prompts?: string[],
+  options?: TeacherNotesPrintOptions,
+): boolean {
+  return printTeacherNotes(
+    createTeacherNotesForSettings(
+      settings,
+      visibleGenerations,
+      context,
+      prompts,
+    ),
+    options,
+  );
+}
+
 export function importRleForSettings(rleText: string): {
   settings: AutomatonSettings;
   status: string;
@@ -629,7 +769,7 @@ export function importRleForSettings(rleText: string): {
   const settings = parseRuleloomRle(rleText);
   return {
     settings,
-    status: `Imported Rule ${settings.rule}, ${settings.width} cells, ${settings.generations} rows from RLE.`
+    status: `Imported Rule ${settings.rule}, ${settings.width} cells, ${settings.generations} rows from RLE.`,
   };
 }
 

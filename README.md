@@ -24,6 +24,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Copy RLE action for deterministic Life/RLE-style text exports of the currently visible generations.
 - Paste RLE import action for restoring Ruleloom RLE exports into editable custom seed settings.
 - Download PNG action for local pattern snapshots of the currently visible generations.
+- Print teacher notes action for a deterministic, escaped, copy-friendly HTML notes sheet covering the current setup, comparison, rule table, selected preset/gallery/lesson context, generated rows, and discussion prompts.
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
 - Product-shaped Gallery examples section with four curated, apply-ready local setups, including wrapped-boundary and custom-seed cases.
 - Gallery filters for seed type, boundary mode, and classroom difficulty, with an empty state when no examples match.
@@ -70,6 +71,8 @@ Use Gallery examples to apply a complete curated setup. Filter the cards by seed
 
 Use Lesson paths when you want a short guided sequence instead of standalone cards. Each step applies an existing gallery setup, resets playback to the first row, and gives a discussion prompt for observation.
 
+Use Print teacher notes to prepare a local printable HTML sheet for the current setup. The notes include the active rule, seed, boundary mode, comparison summary, rule table, visible generated rows, selected preset/gallery/lesson context when available, and discussion prompts.
+
 ## Examples
 
 Restore a deterministic Rule 90 exploration from a URL query string:
@@ -91,6 +94,8 @@ Switch `boundary=wrap` in a share URL to make the left and right edges read each
 Set the main rule to `30` and Compare with rule to `90` to see a deterministic divergence summary for the same board.
 
 Step to a partial run, then use Download PNG to capture only the visible rows as a filename-safe snapshot such as `ruleloom-rule-90-w61-g12-center-fixed.png`.
+
+Apply a lesson path step, change Compare with rule, then use Print teacher notes to create a facilitator handout that records the exact visible rows and discussion prompts for that classroom moment.
 
 Copy RLE and later paste it back into Import RLE to continue editing from the saved rule, width, visible rows, boundary mode, and custom seed:
 
@@ -135,7 +140,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, rule comparison summaries, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -143,9 +148,9 @@ npm test -- --run
 
 ## Roadmap
 
-- Add printable teacher notes for comparing rules, seeds, and boundary modes.
 - Add import/export for local lesson path packs without accounts or cloud sync.
 - Add a compact projector mode for facilitators running live classroom explorations.
+- Add saved local comparison sets for recurring workshops.
 
 ## Contributing
 

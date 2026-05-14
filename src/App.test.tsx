@@ -3,6 +3,7 @@ import {
   copyRleForSettings,
   copySvgForSettings,
   copyTextForSettings,
+  createTeacherNotesForSettings,
   createAppHtml,
   downloadPngForSettings,
   getGalleryExamples,
@@ -10,6 +11,7 @@ import {
   getPresetExplanations,
   resolveGalleryApply,
   importRleForSettings,
+  printTeacherNotesForSettings,
   resolveKeyboardShortcut,
   resolveLessonPathApply,
 } from "./App";
@@ -67,6 +69,8 @@ describe("App", () => {
     expect(html).toContain("Import RLE");
     expect(html).toContain('data-action="download-png"');
     expect(html).toContain("Download PNG");
+    expect(html).toContain('data-action="print-teacher-notes"');
+    expect(html).toContain("Print teacher notes");
     expect(html).toContain('aria-label="Export status"');
     expect(html).toContain('<select id="boundaryMode"');
     expect(html).toContain("Fixed zero edges");
@@ -202,7 +206,9 @@ describe("App", () => {
     expect(html).toContain('data-gallery-example="rule-30-random-field"');
     expect(html).not.toContain('data-gallery-example="wrapped-traffic-loop"');
     expect(html).not.toContain('data-gallery-example="sierpinski-center"');
-    expect(html).not.toContain('data-gallery-example="custom-seed-glider-lanes"');
+    expect(html).not.toContain(
+      'data-gallery-example="custom-seed-glider-lanes"',
+    );
     expect(html).toContain('data-gallery-apply="rule-30-random-field"');
   });
 
@@ -432,7 +438,7 @@ x = 15, y = 3, rule = W90
 # seed mode: center
 # boundary mode: fixed
 x = 15, y = 3, rule = W90
-7bo7b$6bobo6b$5bo3bo5b!`)
+7bo7b$6bobo6b$5bo3bo5b!`),
     ).toEqual({
       settings: {
         rule: 90,
@@ -440,9 +446,9 @@ x = 15, y = 3, rule = W90
         generations: 3,
         seedMode: "custom",
         boundaryMode: "fixed",
-        customSeed: "000000010000000"
+        customSeed: "000000010000000",
       },
-      status: "Imported Rule 90, 15 cells, 3 rows from RLE."
+      status: "Imported Rule 90, 15 cells, 3 rows from RLE.",
     });
   });
 
@@ -489,5 +495,72 @@ x = 15, y = 3, rule = W90
         filename: "ruleloom-rule-90-w15-g3-center-fixed.png",
       },
     ]);
+  });
+
+  it("creates teacher notes from current visible settings", () => {
+    const html = createTeacherNotesForSettings(
+      {
+        rule: 90,
+        comparisonRule: 30,
+        width: 15,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "wrap",
+      },
+      3,
+      {
+        source: "gallery",
+        title: "Sierpinski lattice",
+        description: "Center seed fractal.",
+      },
+      ["What stays symmetrical?"],
+    );
+
+    expect(html).toContain("<h1>Ruleloom Lab teacher notes</h1>");
+    expect(html).toContain("<dt>Rule</dt><dd>90</dd>");
+    expect(html).toContain("<dt>Generations</dt><dd>3 rows</dd>");
+    expect(html).toContain("<dt>Boundary</dt><dd>wrapped circular edges</dd>");
+    expect(html).toContain("<dt>Comparison</dt><dd>Rule 90 vs Rule 30</dd>");
+    expect(html).toContain("Sierpinski lattice");
+    expect(html).toContain("Center seed fractal.");
+    expect(html).toContain("<td><code>111</code></td><td>0</td>");
+    expect(html).toContain(".......#.......");
+    expect(html).toContain("......#.#......");
+    expect(html).toContain(".....#...#.....");
+    expect(html).toContain("<li>What stays symmetrical?</li>");
+  });
+
+  it("prints teacher notes through injected print target helpers", () => {
+    const write = vi.fn();
+    const print = vi.fn();
+    const result = printTeacherNotesForSettings(
+      {
+        rule: 30,
+        comparisonRule: 90,
+        width: 15,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "fixed",
+      },
+      3,
+      undefined,
+      ["What changes first?"],
+      {
+        openPrintTarget: () => ({
+          document: {
+            open: vi.fn(),
+            write,
+            close: vi.fn(),
+          },
+          print,
+        }),
+      },
+    );
+
+    expect(result).toBe(true);
+    expect(write).toHaveBeenCalledOnce();
+    expect(write.mock.calls[0][0]).toContain("<!doctype html>");
+    expect(write.mock.calls[0][0]).toContain("What changes first?");
+    expect(print).toHaveBeenCalledOnce();
   });
 });

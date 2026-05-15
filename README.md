@@ -18,6 +18,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Accessible HTML/CSS automata grid.
 - Rule table for neighborhoods from `111` to `000`.
 - Step, reset, run, and share controls.
+- Projector mode toggle that enlarges the automaton, keeps presentation status visible, and hides secondary controls for live facilitation.
 - Keyboard shortcuts: Space toggles Run/Pause, ArrowRight or `.` steps, `R` resets, and number keys `1`-`4` choose the visible presets.
 - Copy text action for portable monospaced pattern exports with rule, width, generation, seed, and boundary metadata.
 - Copy SVG action for standalone pattern snapshots.
@@ -63,6 +64,8 @@ Use Compare with rule to see the first generation where two rules diverge and th
 
 Use keyboard shortcuts when focus is not inside a form control: Space for Run/Pause, ArrowRight or `.` for Step, `R` for Reset, and `1`-`4` for Rule 30, Rule 90, Rule 110, and Rule 184 in visible preset order.
 
+Use Projector mode during live facilitation to enlarge the current automaton, keep the rule/width/row/boundary status visible, and reduce secondary classroom clutter. Exit projector mode to bring the full controls back without changing the local setup.
+
 Use Download PNG to save a local snapshot of the currently visible generations. PNG export runs in the browser with no uploads.
 
 Use Paste Ruleloom RLE and Import RLE to restore a copied Ruleloom RLE export locally. The import reads the Ruleloom `W<number>` header, width, visible generation count, boundary metadata, and custom seed metadata when present; otherwise it derives the custom seed from the first decoded row.
@@ -96,6 +99,8 @@ Set the main rule to `30` and Compare with rule to `90` to see a deterministic d
 Step to a partial run, then use Download PNG to capture only the visible rows as a filename-safe snapshot such as `ruleloom-rule-90-w61-g12-center-fixed.png`.
 
 Apply a lesson path step, change Compare with rule, then use Print teacher notes to create a facilitator handout that records the exact visible rows and discussion prompts for that classroom moment.
+
+Switch on Projector mode after choosing a gallery example or lesson path step to present the enlarged board while keeping Step, Reset, Run, and preset controls close at hand.
 
 Copy RLE and later paste it back into Import RLE to continue editing from the saved rule, width, visible rows, boundary mode, and custom seed:
 
@@ -140,7 +145,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -149,7 +154,7 @@ npm test -- --run
 ## Roadmap
 
 - Add import/export for local lesson path packs without accounts or cloud sync.
-- Add a compact projector mode for facilitators running live classroom explorations.
+- Add local annotation layers for marking notable generations during facilitation.
 - Add saved local comparison sets for recurring workshops.
 
 ## Contributing

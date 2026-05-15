@@ -51,6 +51,10 @@ describe("App", () => {
     const html = createAppHtml();
 
     expect(html).toContain("<h1>Ruleloom Lab</h1>");
+    expect(html).toContain('data-action="toggle-projector-mode"');
+    expect(html).toContain("Projector mode");
+    expect(html).toContain('class="projector-status"');
+    expect(html).toContain("Projector mode is off. Full controls are visible.");
     expect(html).toContain('aria-label="Rule 30 preset"');
     expect(html).toContain('aria-label="Rule 90 preset"');
     expect(html).toContain('aria-label="Rule 110 preset"');
@@ -79,6 +83,30 @@ describe("App", () => {
     expect(html).toContain('id="comparisonRule"');
     expect(html).toContain("First differing generation");
     expect(html).toContain("Total differing cells");
+  });
+
+  it("renders projector mode with shell class, exit label, and live status", () => {
+    const html = createAppHtml(
+      {
+        rule: 90,
+        width: 61,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "wrap",
+      },
+      "",
+      "",
+      {},
+      true,
+    );
+
+    expect(html).toContain('<main class="shell projector-mode">');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("Exit projector mode");
+    expect(html).toContain('role="status"');
+    expect(html).toContain(
+      "Projector mode is on. Showing Rule 90, 61 cells, 80 rows, Wrapped edges.",
+    );
   });
 
   it("renders deterministic rule comparison summary for the current settings", () => {

@@ -43,6 +43,11 @@ import {
   type TeacherNotesContext,
   type TeacherNotesPrintOptions,
 } from "./teacherNotes";
+import {
+  resolveProjectorModeButtonLabel,
+  resolveProjectorModeRootClassName,
+  resolveProjectorModeStatusText,
+} from "./projectorMode";
 import "./App.css";
 
 const PRESETS = [
@@ -134,6 +139,7 @@ export function createAppHtml(
   exportStatus = "",
   rleImportText = "",
   galleryFilters: GalleryFilters = {},
+  projectorMode = false,
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
@@ -141,6 +147,18 @@ export function createAppHtml(
   const lessonPaths = listLessonPaths();
   const rows = generateAutomaton(appSettings);
   const ruleTable = decodeRule(appSettings.rule);
+  const boundaryLabel = boundaryModeLabel(appSettings.boundaryMode);
+  const projectorModeButtonLabel =
+    resolveProjectorModeButtonLabel(projectorMode);
+  const projectorModeStatusText = resolveProjectorModeStatusText(
+    projectorMode,
+    {
+      rule: appSettings.rule,
+      width: appSettings.width,
+      generations: appSettings.generations,
+      boundaryModeLabel: boundaryLabel,
+    },
+  );
   const comparison = compareRules({
     primaryRule: appSettings.rule,
     comparisonRule: appSettings.comparisonRule,
@@ -151,18 +169,22 @@ export function createAppHtml(
   });
 
   return `
-    <main class="shell">
+    <main class="${resolveProjectorModeRootClassName(projectorMode)}">
       <section class="intro">
         <div>
           <p class="eyebrow">Elementary cellular automata</p>
           <h1>Ruleloom Lab</h1>
           <p class="lede">Explore how three-cell neighborhood rules weave complex local-first patterns.</p>
         </div>
-        <div class="status" aria-live="polite">
-          <span>Rule ${appSettings.rule}</span>
-          <span>${appSettings.width} cells</span>
-          <span>${appSettings.generations} rows</span>
-          <span>${boundaryModeLabel(appSettings.boundaryMode)}</span>
+        <div class="presentation-tools">
+          <div class="status" aria-live="polite">
+            <span>Rule ${appSettings.rule}</span>
+            <span>${appSettings.width} cells</span>
+            <span>${appSettings.generations} rows</span>
+            <span>${boundaryLabel}</span>
+          </div>
+          <button type="button" class="projector-toggle" data-action="toggle-projector-mode" aria-pressed="${projectorMode}">${projectorModeButtonLabel}</button>
+          <p class="projector-status" role="status" aria-live="polite">${projectorModeStatusText}</p>
         </div>
       </section>
 
@@ -359,6 +381,7 @@ export function mountApp(root: HTMLElement): void {
   let galleryFilters = normalizeGalleryFilters();
   let teacherNotesContext: TeacherNotesContext | undefined;
   let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
+  let projectorMode = false;
   let timer: number | undefined;
 
   const render = () => {
@@ -367,6 +390,7 @@ export function mountApp(root: HTMLElement): void {
       exportStatus,
       rleImportText,
       galleryFilters,
+      projectorMode,
     );
     bindEvents();
   };
@@ -563,6 +587,13 @@ export function mountApp(root: HTMLElement): void {
     root
       .querySelector<HTMLButtonElement>("[data-action='run']")
       ?.addEventListener("click", toggleRun);
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='toggle-projector-mode']")
+      ?.addEventListener("click", () => {
+        projectorMode = !projectorMode;
+        render();
+      });
 
     root
       .querySelector<HTMLButtonElement>("[data-action='share']")

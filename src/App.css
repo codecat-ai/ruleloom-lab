@@ -60,6 +60,13 @@ h1 {
   max-width: 620px;
 }
 
+.presentation-tools {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
 .status {
   display: flex;
   flex-wrap: wrap;
@@ -68,11 +75,29 @@ h1 {
 }
 
 .status span,
-.actions button {
+.actions button,
+.projector-toggle {
   background: #ffffff;
   border: 1px solid #cbd2d9;
   border-radius: 8px;
   padding: 8px 12px;
+}
+
+.projector-toggle {
+  cursor: pointer;
+}
+
+.projector-toggle:hover {
+  border-color: #5a6b3f;
+}
+
+.projector-status {
+  color: #3e4c59;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+  max-width: 420px;
+  text-align: right;
 }
 
 .controls,
@@ -438,6 +463,59 @@ textarea {
   background: #1f2933;
 }
 
+.projector-mode {
+  background: #f8faf5;
+  padding: 20px;
+}
+
+.projector-mode .intro,
+.projector-mode .layout {
+  max-width: min(1600px, 100%);
+}
+
+.projector-mode .intro {
+  margin-bottom: 16px;
+}
+
+.projector-mode .lede,
+.projector-mode .controls,
+.projector-mode .rle-import,
+.projector-mode .comparison-summary,
+.projector-mode .preset-explanations,
+.projector-mode .lesson-paths,
+.projector-mode .gallery-examples,
+.projector-mode .rule-table,
+.projector-mode .actions button[data-action="share"],
+.projector-mode .actions button[data-action="copy-text"],
+.projector-mode .actions button[data-action="copy-svg"],
+.projector-mode .actions button[data-action="copy-rle"],
+.projector-mode .actions button[data-action="download-png"],
+.projector-mode .actions button[data-action="print-teacher-notes"],
+.projector-mode .export-status,
+.projector-mode .shortcut-copy {
+  display: none;
+}
+
+.projector-mode .actions {
+  justify-content: center;
+  max-width: min(1600px, 100%);
+}
+
+.projector-mode .grid-wrap {
+  padding: 20px;
+}
+
+.projector-mode .automaton-grid {
+  gap: 2px;
+  grid-template-columns: repeat(var(--cells), minmax(9px, 1fr));
+  min-width: min(1400px, calc(var(--cells) * 14px));
+}
+
+.projector-mode .cell {
+  border-radius: 2px;
+  min-width: 9px;
+}
+
 @media (max-width: 720px) {
   .shell {
     padding: 18px;
@@ -450,6 +528,14 @@ textarea {
 
   .status {
     justify-content: start;
+  }
+
+  .presentation-tools {
+    justify-items: start;
+  }
+
+  .projector-status {
+    text-align: left;
   }
 
   .section-heading {

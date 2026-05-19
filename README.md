@@ -31,10 +31,12 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Gallery filters for seed type, boundary mode, and classroom difficulty, with an empty state when no examples match.
 - Lesson paths that sequence existing gallery examples into named classroom investigations with estimated minutes and discussion prompts.
 - Copy and paste lesson path pack JSON locally, with validation for safe ids, prompts, rules, seeds, and boundary values; imported packs stay in the current browser session with no accounts or sync.
+- Local generation annotations for marking notable rows during facilitation, with labels, optional notes, remove controls, and copy/paste JSON import for the current browser session.
 - Pure deterministic engine exported from `src/automata.ts`.
 - Pure curated gallery metadata and apply helper exported from `src/gallery.ts`.
 - Pure lesson path metadata and safe step-application helpers exported from `src/lessonPaths.ts`.
 - Pure deterministic lesson path pack import/export helpers exported from `src/lessonPathPacks.ts`.
+- Pure local generation annotation helpers exported from `src/generationAnnotations.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
@@ -78,6 +80,8 @@ Use Lesson paths when you want a short guided sequence instead of standalone car
 
 Use Copy built-in lesson paths to copy deterministic lesson path pack JSON. Paste a local pack into the Lesson paths import box to add those paths for the current browser session only; malformed JSON, duplicate ids, unsafe text fields, and invalid rule/seed/boundary settings are rejected locally.
 
+Use Generation annotations to mark the currently visible generation with a short label and optional note while facilitating. Copy annotations JSON to carry those local marks into another session, or paste/import annotation JSON; malformed schema versions, missing fields, invalid generations, and empty labels are rejected locally.
+
 Use Print teacher notes to prepare a local printable HTML sheet for the current setup. The notes include the active rule, seed, boundary mode, comparison summary, rule table, visible generated rows, selected preset/gallery/lesson context when available, and discussion prompts.
 
 ## Examples
@@ -105,6 +109,8 @@ Set the main rule to `30` and Compare with rule to `90` to see a deterministic d
 Step to a partial run, then use Download PNG to capture only the visible rows as a filename-safe snapshot such as `ruleloom-rule-90-w61-g12-center-fixed.png`.
 
 Apply a lesson path step, change Compare with rule, then use Print teacher notes to create a facilitator handout that records the exact visible rows and discussion prompts for that classroom moment.
+
+During a live run, step to a notable generation and add a Generation annotation such as `First asymmetry` or `Traffic jam forms`; copy the annotations JSON after the session to keep the marks without uploading anything.
 
 Switch on Projector mode after choosing a gallery example or lesson path step to present the enlarged board while keeping Step, Reset, Run, and preset controls close at hand.
 
@@ -151,7 +157,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path pack import/export validation, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path pack import/export validation, generation annotation validation/import/export/sorting, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -159,9 +165,9 @@ npm test -- --run
 
 ## Roadmap
 
-- Add local annotation layers for marking notable generations during facilitation.
 - Add saved local comparison sets for recurring workshops.
 - Add local facilitator timing cues for lesson path steps.
+- Add local facilitator session summaries that combine annotations, lesson context, and selected exports.
 
 ## Contributing
 

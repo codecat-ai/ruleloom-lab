@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   copyRleForSettings,
+  copyAnnotationsForSession,
   copyLessonPathPackForPaths,
   copySvgForSettings,
   copyTextForSettings,
@@ -10,6 +11,7 @@ import {
   getGalleryExamples,
   getLessonPaths,
   getPresetExplanations,
+  importAnnotationsForSession,
   importLessonPathPackForSession,
   resolveGalleryApply,
   importRleForSettings,
@@ -85,6 +87,67 @@ describe("App", () => {
     expect(html).toContain('id="comparisonRule"');
     expect(html).toContain("First differing generation");
     expect(html).toContain("Total differing cells");
+    expect(html).toContain('class="generation-annotations"');
+    expect(html).toContain("Generation annotations");
+    expect(html).toContain("Current visible generation: 80");
+    expect(html).toContain('id="annotationLabel"');
+    expect(html).toContain('id="annotationNote"');
+    expect(html).toContain('data-action="add-generation-annotation"');
+    expect(html).toContain("Add annotation");
+    expect(html).toContain('data-action="copy-generation-annotations"');
+    expect(html).toContain("Copy annotations JSON");
+    expect(html).toContain('id="generationAnnotationsImport"');
+    expect(html).toContain('data-action="import-generation-annotations"');
+    expect(html).toContain("Import annotations JSON");
+  });
+
+  it("renders sorted local generation annotations with remove controls", () => {
+    const html = createAppHtml(
+      {
+        rule: 90,
+        width: 15,
+        generations: 12,
+        seedMode: "center",
+      },
+      "",
+      "",
+      {},
+      false,
+      [],
+      "",
+      "",
+      [
+        {
+          id: "later",
+          generation: 8,
+          label: "Later branch",
+          createdAt: "2026-05-19T00:00:02.000Z",
+        },
+        {
+          id: "early",
+          generation: 3,
+          label: "First fork",
+          note: "Ask what changed.",
+          createdAt: "2026-05-19T00:00:01.000Z",
+        },
+      ],
+      "Draft label",
+      "Draft note",
+      "[]",
+      "Imported 2 annotations.",
+    );
+
+    expect(html).toContain("Current visible generation: 12");
+    expect(html).toContain('value="Draft label"');
+    expect(html).toContain(">Draft note</textarea>");
+    expect(html).toContain(">[]</textarea>");
+    expect(html.indexOf("Generation 3")).toBeLessThan(
+      html.indexOf("Generation 8"),
+    );
+    expect(html).toContain("First fork");
+    expect(html).toContain("Ask what changed.");
+    expect(html).toContain('data-generation-annotation-remove="early"');
+    expect(html).toContain("Imported 2 annotations.");
   });
 
   it("renders projector mode with shell class, exit label, and live status", () => {
@@ -330,6 +393,65 @@ describe("App", () => {
     expect(JSON.parse(writeText.mock.calls[0][0])).toEqual({
       schemaVersion: 1,
       lessonPaths: getLessonPaths(),
+    });
+  });
+
+  it("copies local annotations as deterministic JSON", async () => {
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
+
+    await copyAnnotationsForSession(
+      [
+        {
+          id: "mark",
+          generation: 4,
+          label: "Notable split",
+          createdAt: "2026-05-19T00:00:00.000Z",
+        },
+      ],
+      writeText,
+    );
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(JSON.parse(writeText.mock.calls[0][0])).toEqual({
+      schemaVersion: 1,
+      annotations: [
+        {
+          id: "mark",
+          generation: 4,
+          label: "Notable split",
+          createdAt: "2026-05-19T00:00:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("imports local annotations for the current session", () => {
+    expect(
+      importAnnotationsForSession(
+        JSON.stringify({
+          schemaVersion: 1,
+          annotations: [
+            {
+              id: "mark",
+              generation: 4,
+              label: "Notable split",
+              createdAt: "2026-05-19T00:00:00.000Z",
+            },
+          ],
+        }),
+      ),
+    ).toEqual({
+      annotations: [
+        {
+          id: "mark",
+          generation: 4,
+          label: "Notable split",
+          createdAt: "2026-05-19T00:00:00.000Z",
+        },
+      ],
+      status: "Imported 1 local annotation for this browser session.",
     });
   });
 

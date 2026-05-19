@@ -59,6 +59,11 @@ import {
   type PngExportPayload,
 } from "./pngExport";
 import {
+  formatTimingCueSheet,
+  generateTimingCueSchedule,
+  resolveTimingCueTotalMinutes,
+} from "./timingCues";
+import {
   formatTeacherNotesHtml,
   printTeacherNotes,
   type TeacherNotesContext,
@@ -387,27 +392,7 @@ export function createAppHtml(
           <p class="lesson-path-pack-status" role="status" aria-live="polite">${escapeHtml(lessonPathPackStatus)}</p>
         </div>
         <div class="lesson-path-grid">
-          ${lessonPaths
-            .map(
-              (path) => `<article data-lesson-path="${path.id}">
-            <div class="lesson-path-header">
-              <strong>${escapeHtml(path.title)}</strong>
-              <span>${path.estimatedMinutes} min · ${escapeHtml(path.audience)}</span>
-            </div>
-            <p>${escapeHtml(path.summary)}</p>
-            <ol>
-              ${path.steps
-                .map(
-                  (step, index) => `<li>
-                <span>${escapeHtml(step.prompt)}</span>
-                <button type="button" data-lesson-path-apply="${path.id}" data-lesson-step="${index}" aria-label="Apply ${escapeHtml(path.title)} step ${index + 1}">Apply step ${index + 1}</button>
-              </li>`,
-                )
-                .join("")}
-            </ol>
-          </article>`,
-            )
-            .join("")}
+          ${lessonPaths.map((path) => renderLessonPath(path)).join("")}
         </div>
       </section>
 
@@ -1021,6 +1006,27 @@ export function mountApp(root: HTMLElement): void {
       });
 
     root
+      .querySelectorAll<HTMLButtonElement>("[data-action='copy-timing-cues']")
+      .forEach((button) => {
+        button.addEventListener("click", async () => {
+          const allLessonPaths = [...listLessonPaths(), ...localLessonPaths];
+          const path = allLessonPaths.find(
+            (candidate) => candidate.id === button.dataset.timingCuePath,
+          );
+
+          if (!path) {
+            return;
+          }
+
+          await copyTimingCueSheetForLessonPath(path, (text) => {
+            return navigator.clipboard?.writeText(text) ?? Promise.resolve();
+          });
+          lessonPathPackStatus = `Copied timing cues for "${path.title}".`;
+          render();
+        });
+      });
+
+    root
       .querySelector<HTMLButtonElement>(
         "[data-action='import-lesson-path-pack']",
       )
@@ -1152,6 +1158,26 @@ export async function copyLessonPathPackForPaths(
   writeText: (value: string) => Promise<void>,
 ): Promise<void> {
   await writeText(exportLessonPathPack(paths));
+}
+
+export async function copyTimingCueSheetForLessonPath(
+  path: LessonPath,
+  writeText: (value: string) => Promise<void>,
+): Promise<void> {
+  const totalMinutes = resolveTimingCueTotalMinutes();
+  const schedule = generateTimingCueSchedule({
+    lessonTitle: path.title,
+    steps: path.steps,
+    totalMinutes,
+  });
+
+  await writeText(
+    formatTimingCueSheet({
+      lessonTitle: path.title,
+      totalMinutes,
+      schedule,
+    }),
+  );
 }
 
 export async function copyAnnotationsForSession(
@@ -1426,6 +1452,51 @@ function renderComparisonSets(sets: readonly SavedComparisonSet[]): string {
             </article>`,
     )
     .join("");
+}
+
+function renderLessonPath(path: LessonPath): string {
+  const totalMinutes = resolveTimingCueTotalMinutes();
+  const schedule = generateTimingCueSchedule({
+    lessonTitle: path.title,
+    steps: path.steps,
+    totalMinutes,
+  });
+  const timingCueSheet = formatTimingCueSheet({
+    lessonTitle: path.title,
+    totalMinutes,
+    schedule,
+  });
+
+  return `<article data-lesson-path="${escapeHtml(path.id)}">
+            <div class="lesson-path-header">
+              <strong>${escapeHtml(path.title)}</strong>
+              <span>${path.estimatedMinutes} min · ${escapeHtml(path.audience)}</span>
+            </div>
+            <p>${escapeHtml(path.summary)}</p>
+            <div class="timing-cues" aria-label="${escapeHtml(path.title)} timing cues">
+              <div class="timing-cue-heading">
+                <strong>Timing cues</strong>
+                <button type="button" data-action="copy-timing-cues" data-timing-cue-path="${escapeHtml(path.id)}">Copy timing cues</button>
+              </div>
+              <textarea id="timingCueSheet-${escapeHtml(path.id)}" rows="7" spellcheck="false" readonly>${escapeHtml(timingCueSheet)}</textarea>
+            </div>
+            <ol>
+              ${path.steps
+                .map((step, index) => {
+                  const cue = schedule[index];
+                  return `<li>
+                <span>${escapeHtml(step.prompt)}</span>
+                ${
+                  cue
+                    ? `<small>${cue.startMinute}-${cue.endMinute} min · ${escapeHtml(cue.phaseLabel)}</small>`
+                    : ""
+                }
+                <button type="button" data-lesson-path-apply="${escapeHtml(path.id)}" data-lesson-step="${index}" aria-label="Apply ${escapeHtml(path.title)} step ${index + 1}">Apply step ${index + 1}</button>
+              </li>`;
+                })
+                .join("")}
+            </ol>
+          </article>`;
 }
 
 export async function downloadPngForSettings(

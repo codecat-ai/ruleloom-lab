@@ -30,6 +30,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Product-shaped Gallery examples section with four curated, apply-ready local setups, including wrapped-boundary and custom-seed cases.
 - Gallery filters for seed type, boundary mode, and classroom difficulty, with an empty state when no examples match.
 - Lesson paths that sequence existing gallery examples into named classroom investigations with estimated minutes and discussion prompts.
+- Local facilitator timing cues for each lesson path, including deterministic minute ranges, phase labels, concise prompts, and a copyable plain-text cue sheet.
 - Copy and paste lesson path pack JSON locally, with validation for safe ids, prompts, rules, seeds, and boundary values; imported packs stay in the current browser session with no accounts or sync.
 - Local generation annotations for marking notable rows during facilitation, with labels, optional notes, remove controls, and copy/paste JSON import for the current browser session.
 - Saved local comparison sets for recurring workshops, capturing title, optional note, both rules, width, generation count, seed mode/value, random seed, boundary mode, and schema version in browser storage with copy/paste JSON portability.
@@ -37,6 +38,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Pure curated gallery metadata and apply helper exported from `src/gallery.ts`.
 - Pure lesson path metadata and safe step-application helpers exported from `src/lessonPaths.ts`.
 - Pure deterministic lesson path pack import/export helpers exported from `src/lessonPathPacks.ts`.
+- Pure deterministic lesson timing cue schedule and plain-text formatter helpers exported from `src/timingCues.ts`.
 - Pure local generation annotation helpers exported from `src/generationAnnotations.ts`.
 - Pure saved comparison set validation, storage, import/export, and apply helpers exported from `src/comparisonSets.ts`.
 - Query-string import and export helpers in `src/share.ts`.
@@ -80,6 +82,8 @@ Use Gallery examples to apply a complete curated setup. Filter the cards by seed
 
 Use Lesson paths when you want a short guided sequence instead of standalone cards. Each step applies an existing gallery setup, resets playback to the first row, and gives a discussion prompt for observation.
 
+Use the Timing cues shown on each lesson path to run a 24-minute mini lesson without a separate timer sheet. Each cue shows a minute range, phase label, and facilitator prompt; Copy timing cues copies a deterministic plain-text sheet for local handoff or printing.
+
 Use Copy built-in lesson paths to copy deterministic lesson path pack JSON. Paste a local pack into the Lesson paths import box to add those paths for the current browser session only; malformed JSON, duplicate ids, unsafe text fields, and invalid rule/seed/boundary settings are rejected locally.
 
 Use Generation annotations to mark the currently visible generation with a short label and optional note while facilitating. Copy annotations JSON to carry those local marks into another session, or paste/import annotation JSON; malformed schema versions, missing fields, invalid generations, and empty labels are rejected locally.
@@ -103,6 +107,8 @@ Apply Sierpinski lattice for a clean Rule 90 center-seed fractal, Wrapped traffi
 Filter Gallery examples to find a beginner center-seed activity, an intermediate fixed-boundary random-seed activity, or an advanced custom-seed activity for a classroom sequence.
 
 Run Patterns from one spark for a 12-minute path from Rule 90 center seed to Rule 30 deterministic noise and Rule 110 custom lanes. Run Edges change the story for a 10-minute boundary-focused path from fixed edges to wrapped traffic.
+
+Copy the timing cues for Patterns from one spark to get a 24-minute mini lesson sheet with Explore, Compare, and Reflect ranges from 0-8, 8-16, and 16-24 minutes.
 
 Copy the built-in lesson path pack, edit the JSON title and prompts in a local file, then paste it back as a session-only pack for a workshop variation.
 
@@ -165,7 +171,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path pack import/export validation, generation annotation validation/import/export/sorting, saved comparison set validation/storage/import/export/apply behavior, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path timing cue schedules and plain-text sheets, lesson path pack import/export validation, generation annotation validation/import/export/sorting, saved comparison set validation/storage/import/export/apply behavior, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -173,9 +179,9 @@ npm test -- --run
 
 ## Roadmap
 
-- Add local facilitator timing cues for lesson path steps.
 - Add local facilitator session summaries that combine annotations, lesson context, and selected exports.
 - Add local workshop checklists that tie comparison sets, lesson paths, and facilitator notes into a reusable run sheet.
+- Add optional local lesson path pacing presets for shorter bell-ringers and longer workshops.
 
 ## Contributing
 

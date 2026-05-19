@@ -4,6 +4,7 @@ import {
   copyAnnotationsForSession,
   copyComparisonSetsForStorage,
   copyLessonPathPackForPaths,
+  copyTimingCueSheetForLessonPath,
   copySvgForSettings,
   copyTextForSettings,
   createTeacherNotesForSettings,
@@ -455,6 +456,13 @@ describe("App", () => {
     expect(html).toContain("Run a short guided sequence");
     expect(html).toContain('data-action="copy-lesson-path-pack"');
     expect(html).toContain("Copy built-in lesson paths");
+    expect(html).toContain('data-action="copy-timing-cues"');
+    expect(html).toContain("Copy timing cues");
+    expect(html).toContain('id="timingCueSheet-patterns-from-one-spark"');
+    expect(html).toContain("Ruleloom Lab timing cues");
+    expect(html).toContain("0-8 min · Explore");
+    expect(html).toContain("8-16 min · Compare");
+    expect(html).toContain("16-24 min · Reflect");
     expect(html).toContain('id="lessonPathPackImport"');
     expect(html).toContain('data-action="import-lesson-path-pack"');
     expect(html).toContain("Import lesson path pack");
@@ -493,6 +501,23 @@ describe("App", () => {
       schemaVersion: 1,
       lessonPaths: getLessonPaths(),
     });
+  });
+
+  it("copies a deterministic timing cue sheet for a lesson path", async () => {
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
+
+    await copyTimingCueSheetForLessonPath(getLessonPaths()[0], writeText);
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain(
+      "Lesson: Patterns from one spark",
+    );
+    expect(writeText.mock.calls[0][0]).toContain("Total: 24 minutes");
+    expect(writeText.mock.calls[0][0]).toContain(
+      "1. 0-8 min | Explore | Step 1",
+    );
   });
 
   it("copies local annotations as deterministic JSON", async () => {

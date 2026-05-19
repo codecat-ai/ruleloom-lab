@@ -500,6 +500,31 @@ textarea {
   margin: 0;
 }
 
+.timing-cues {
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.timing-cue-heading {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.timing-cue-heading strong {
+  color: #3e4c59;
+  font-size: 0.9rem;
+}
+
+.timing-cues textarea {
+  color: #3e4c59;
+  min-height: 148px;
+  resize: vertical;
+}
+
 .lesson-path-grid ol {
   display: grid;
   gap: 10px;
@@ -519,6 +544,13 @@ textarea {
 
 .lesson-path-grid li span {
   font-size: 0.9rem;
+}
+
+.lesson-path-grid li small {
+  color: #5a6b3f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .lesson-path-grid button {

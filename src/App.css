@@ -203,7 +203,8 @@ textarea {
   margin: 0;
 }
 
-.export-status {
+.export-status,
+.session-summary-status {
   color: #3e4c59;
   flex-basis: 100%;
   font-size: 0.9rem;
@@ -706,9 +707,11 @@ textarea {
 .projector-mode .actions button[data-action="copy-text"],
 .projector-mode .actions button[data-action="copy-svg"],
 .projector-mode .actions button[data-action="copy-rle"],
+.projector-mode .actions button[data-action="copy-session-summary"],
 .projector-mode .actions button[data-action="download-png"],
 .projector-mode .actions button[data-action="print-teacher-notes"],
 .projector-mode .export-status,
+.projector-mode .session-summary-status,
 .projector-mode .shortcut-copy {
   display: none;
 }

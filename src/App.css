@@ -250,6 +250,40 @@ textarea {
   gap: 12px;
 }
 
+.lesson-path-pack-tools {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.lesson-path-pack-tools button {
+  background: #ffffff;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.lesson-path-pack-tools button:hover {
+  border-color: #5a6b3f;
+}
+
+.lesson-path-pack-tools textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.lesson-path-pack-status {
+  color: #3e4c59;
+  font-size: 0.9rem;
+  grid-column: 1 / -1;
+  line-height: 1.4;
+  margin: 0;
+  min-height: 1.3em;
+}
+
 .section-heading {
   align-items: end;
   display: flex;
@@ -548,6 +582,10 @@ textarea {
   }
 
   .rle-import {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-path-pack-tools {
     grid-template-columns: 1fr;
   }
 }

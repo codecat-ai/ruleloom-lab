@@ -23,10 +23,11 @@ import {
   type GalleryFilters,
 } from "./gallery";
 import {
-  applyLessonPathStep,
+  applyLessonPathStepFromPaths,
   listLessonPaths,
   type LessonPath,
 } from "./lessonPaths";
+import { exportLessonPathPack, importLessonPathPack } from "./lessonPathPacks";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
 import { parseRuleloomRle } from "./rleImport";
@@ -140,11 +141,17 @@ export function createAppHtml(
   rleImportText = "",
   galleryFilters: GalleryFilters = {},
   projectorMode = false,
+  localLessonPaths: LessonPath[] = [],
+  lessonPathPackImportText = "",
+  lessonPathPackStatus = "",
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
   const galleryExamples = filterGalleryExamples(normalizedGalleryFilters);
-  const lessonPaths = listLessonPaths();
+  const lessonPaths = [
+    ...listLessonPaths(),
+    ...copyLessonPaths(localLessonPaths),
+  ];
   const rows = generateAutomaton(appSettings);
   const ruleTable = decodeRule(appSettings.rule);
   const boundaryLabel = boundaryModeLabel(appSettings.boundaryMode);
@@ -266,7 +273,16 @@ export function createAppHtml(
       <section class="lesson-paths" aria-label="Lesson paths">
         <div class="section-heading">
           <h2>Lesson paths</h2>
-          <p>Run a short guided sequence of gallery examples with prompts for learners and facilitators.</p>
+          <p>Run a short guided sequence of gallery examples or imported local packs with prompts for learners and facilitators.</p>
+        </div>
+        <div class="lesson-path-pack-tools">
+          <button type="button" data-action="copy-lesson-path-pack">Copy built-in lesson paths</button>
+          <label>
+            Paste lesson path pack JSON
+            <textarea id="lessonPathPackImport" rows="5" spellcheck="false">${escapeHtml(lessonPathPackImportText)}</textarea>
+          </label>
+          <button type="button" data-action="import-lesson-path-pack">Import lesson path pack</button>
+          <p class="lesson-path-pack-status" role="status" aria-live="polite">${escapeHtml(lessonPathPackStatus)}</p>
         </div>
         <div class="lesson-path-grid">
           ${lessonPaths
@@ -378,6 +394,9 @@ export function mountApp(root: HTMLElement): void {
   let visibleGenerations = settings.generations;
   let exportStatus = "";
   let rleImportText = "";
+  let lessonPathPackImportText = "";
+  let localLessonPaths: LessonPath[] = [];
+  let lessonPathPackStatus = "";
   let galleryFilters = normalizeGalleryFilters();
   let teacherNotesContext: TeacherNotesContext | undefined;
   let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
@@ -391,6 +410,9 @@ export function mountApp(root: HTMLElement): void {
       rleImportText,
       galleryFilters,
       projectorMode,
+      localLessonPaths,
+      lessonPathPackImportText,
+      lessonPathPackStatus,
     );
     bindEvents();
   };
@@ -452,11 +474,13 @@ export function mountApp(root: HTMLElement): void {
 
   const applyLessonPath = (pathId: string, stepIndex: number) => {
     stop();
+    const allLessonPaths = [...listLessonPaths(), ...localLessonPaths];
     const applied = resolveLessonPathApply(
       settings,
       visibleGenerations,
       pathId,
       stepIndex,
+      allLessonPaths,
     );
 
     if (!applied) {
@@ -465,7 +489,7 @@ export function mountApp(root: HTMLElement): void {
 
     settings = applied.settings;
     visibleGenerations = applied.visibleGenerations;
-    const path = listLessonPaths().find((candidate) => candidate.id === pathId);
+    const path = allLessonPaths.find((candidate) => candidate.id === pathId);
     const step = path?.steps[stepIndex];
     teacherNotesContext =
       path && step
@@ -633,6 +657,46 @@ export function mountApp(root: HTMLElement): void {
       });
 
     root
+      .querySelector<HTMLTextAreaElement>("#lessonPathPackImport")
+      ?.addEventListener("input", (event) => {
+        lessonPathPackImportText = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='copy-lesson-path-pack']")
+      ?.addEventListener("click", async () => {
+        await copyLessonPathPackForPaths(listLessonPaths(), (json) => {
+          return navigator.clipboard?.writeText(json) ?? Promise.resolve();
+        });
+        lessonPathPackStatus = "Copied built-in lesson path pack JSON.";
+        render();
+      });
+
+    root
+      .querySelector<HTMLButtonElement>(
+        "[data-action='import-lesson-path-pack']",
+      )
+      ?.addEventListener("click", () => {
+        lessonPathPackImportText =
+          root.querySelector<HTMLTextAreaElement>("#lessonPathPackImport")
+            ?.value ?? "";
+        try {
+          const imported = importLessonPathPackForSession(
+            lessonPathPackImportText,
+          );
+          localLessonPaths = imported.lessonPaths;
+          lessonPathPackStatus = imported.status;
+          lessonPathPackImportText = "";
+        } catch (error) {
+          lessonPathPackStatus =
+            error instanceof Error
+              ? `Lesson path pack import failed: ${error.message}`
+              : "Lesson path pack import failed.";
+        }
+        render();
+      });
+
+    root
       .querySelector<HTMLButtonElement>("[data-action='import-rle']")
       ?.addEventListener("click", () => {
         rleImportText =
@@ -735,6 +799,25 @@ export async function copyRleForSettings(
   await writeText(rle);
 }
 
+export async function copyLessonPathPackForPaths(
+  paths: readonly LessonPath[],
+  writeText: (value: string) => Promise<void>,
+): Promise<void> {
+  await writeText(exportLessonPathPack(paths));
+}
+
+export function importLessonPathPackForSession(json: string): {
+  lessonPaths: LessonPath[];
+  status: string;
+} {
+  const lessonPaths = importLessonPathPack(json);
+
+  return {
+    lessonPaths,
+    status: `Imported ${lessonPaths.length} local lesson ${lessonPaths.length === 1 ? "path" : "paths"} for this browser session.`,
+  };
+}
+
 export function createTeacherNotesForSettings(
   settings: AutomatonSettings & { comparisonRule?: number },
   visibleGenerations: number,
@@ -827,12 +910,13 @@ export function resolveLessonPathApply(
   _visibleGenerations: number,
   pathId: string,
   stepIndex: number,
+  lessonPaths: readonly LessonPath[] = listLessonPaths(),
 ): {
   settings: GalleryAppliedSettings;
   visibleGenerations: number;
   shareQuery: string;
 } | null {
-  const applied = applyLessonPathStep(pathId, stepIndex);
+  const applied = applyLessonPathStepFromPaths(lessonPaths, pathId, stepIndex);
 
   if (!applied) {
     return null;
@@ -843,6 +927,16 @@ export function resolveLessonPathApply(
     visibleGenerations: 1,
     shareQuery: serializeSettingsQuery(applied),
   };
+}
+
+function copyLessonPaths(paths: readonly LessonPath[]): LessonPath[] {
+  return paths.map((path) => ({
+    ...path,
+    steps: path.steps.map((step) => ({
+      ...step,
+      settings: step.settings ? { ...step.settings } : undefined,
+    })),
+  }));
 }
 
 export async function downloadPngForSettings(

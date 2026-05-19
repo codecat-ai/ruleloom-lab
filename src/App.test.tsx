@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   copyRleForSettings,
+  copyLessonPathPackForPaths,
   copySvgForSettings,
   copyTextForSettings,
   createTeacherNotesForSettings,
@@ -9,6 +10,7 @@ import {
   getGalleryExamples,
   getLessonPaths,
   getPresetExplanations,
+  importLessonPathPackForSession,
   resolveGalleryApply,
   importRleForSettings,
   printTeacherNotesForSettings,
@@ -253,11 +255,48 @@ describe("App", () => {
   });
 
   it("renders lesson paths with prompts and accessible step apply controls", () => {
-    const html = createAppHtml();
+    const importedPath = {
+      id: "local-wrap-study",
+      title: "Local wrap study",
+      summary: "Compare wrapped motion with a small deterministic seed.",
+      estimatedMinutes: 8,
+      audience: "Small group",
+      steps: [
+        {
+          prompt: "Where does the moving band re-enter the row?",
+          settings: {
+            rule: 184,
+            width: 31,
+            generations: 24,
+            seedMode: "random" as const,
+            boundaryMode: "wrap" as const,
+            randomSeed: 184,
+            customSeed: "",
+          },
+          comparisonRule: 226,
+        },
+      ],
+    };
+    const html = createAppHtml(
+      undefined,
+      "",
+      "",
+      {},
+      false,
+      [importedPath],
+      "",
+      "Imported 1 local lesson path.",
+    );
 
     expect(html).toContain('class="lesson-paths"');
     expect(html).toContain("Lesson paths");
     expect(html).toContain("Run a short guided sequence");
+    expect(html).toContain('data-action="copy-lesson-path-pack"');
+    expect(html).toContain("Copy built-in lesson paths");
+    expect(html).toContain('id="lessonPathPackImport"');
+    expect(html).toContain('data-action="import-lesson-path-pack"');
+    expect(html).toContain("Import lesson path pack");
+    expect(html).toContain("Imported 1 local lesson path.");
     for (const path of getLessonPaths()) {
       expect(html).toContain(`data-lesson-path="${path.id}"`);
       expect(html).toContain(`<strong>${path.title}</strong>`);
@@ -273,9 +312,82 @@ describe("App", () => {
         );
       });
     }
+    expect(html).toContain('data-lesson-path="local-wrap-study"');
+    expect(html).toContain("Local wrap study");
     expect(html.indexOf("Lesson paths")).toBeLessThan(
       html.indexOf("Gallery examples"),
     );
+  });
+
+  it("copies the built-in lesson path pack as deterministic JSON", async () => {
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
+
+    await copyLessonPathPackForPaths(getLessonPaths(), writeText);
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(JSON.parse(writeText.mock.calls[0][0])).toEqual({
+      schemaVersion: 1,
+      lessonPaths: getLessonPaths(),
+    });
+  });
+
+  it("imports local lesson path packs for the current session", () => {
+    const result = importLessonPathPackForSession(
+      JSON.stringify({
+        schemaVersion: 1,
+        lessonPaths: [
+          {
+            id: "local-center-study",
+            title: "Local center study",
+            summary: "Try a local-only center seed prompt.",
+            estimatedMinutes: 5,
+            audience: "Pair work",
+            steps: [
+              {
+                prompt: "What stays symmetric?",
+                settings: {
+                  rule: 90,
+                  width: 31,
+                  generations: 31,
+                  seedMode: "center",
+                  boundaryMode: "fixed",
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(result).toEqual({
+      lessonPaths: [
+        {
+          id: "local-center-study",
+          title: "Local center study",
+          summary: "Try a local-only center seed prompt.",
+          estimatedMinutes: 5,
+          audience: "Pair work",
+          steps: [
+            {
+              prompt: "What stays symmetric?",
+              settings: {
+                rule: 90,
+                width: 31,
+                generations: 31,
+                seedMode: "center",
+                boundaryMode: "fixed",
+                randomSeed: 1,
+                customSeed: "",
+              },
+              comparisonRule: 90,
+            },
+          ],
+        },
+      ],
+      status: "Imported 1 local lesson path for this browser session.",
+    });
   });
 
   it("applies gallery settings and resets visible playback state", () => {

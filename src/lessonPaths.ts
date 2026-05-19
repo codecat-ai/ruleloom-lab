@@ -4,6 +4,7 @@ import {
   type GalleryAppliedSettings,
   type GalleryExample,
 } from "./gallery";
+import type { AutomatonSettings } from "./automata";
 import { DEFAULT_SETTINGS } from "./share";
 
 export interface LessonPath {
@@ -16,8 +17,10 @@ export interface LessonPath {
 }
 
 export interface LessonPathStep {
-  galleryExampleId: string;
+  galleryExampleId?: string;
   prompt: string;
+  settings?: AutomatonSettings;
+  comparisonRule?: number;
 }
 
 export interface ResolvedLessonPathStep extends LessonPathStep {
@@ -107,7 +110,7 @@ export function getLessonPathStep(
     (galleryExample) => galleryExample.id === step.galleryExampleId,
   );
 
-  if (!example) {
+  if (!example || !step.galleryExampleId) {
     return null;
   }
 
@@ -123,25 +126,50 @@ export function applyLessonPathStep(
   pathId: string,
   index: number,
 ): GalleryAppliedSettings | null {
-  const step = getLessonPathStep(pathId, index);
+  return applyLessonPathStepFromPaths(LESSON_PATHS, pathId, index);
+}
 
-  if (!step) {
+export function applyLessonPathStepFromPaths(
+  paths: readonly LessonPath[],
+  pathId: string,
+  index: number,
+): GalleryAppliedSettings | null {
+  if (!Number.isInteger(index) || index < 0) {
     return null;
   }
 
-  return applyGalleryExample(
-    {
-      ...DEFAULT_SETTINGS,
-      comparisonRule: 90,
-    },
-    step.galleryExampleId,
-  );
+  const path = paths.find((lessonPath) => lessonPath.id === pathId);
+  const step = path?.steps[index];
+
+  if (!path || !step) {
+    return null;
+  }
+
+  if (step.settings) {
+    return {
+      ...step.settings,
+      comparisonRule: step.comparisonRule ?? step.settings.rule,
+    };
+  }
+
+  return step.galleryExampleId
+    ? applyGalleryExample(
+        {
+          ...DEFAULT_SETTINGS,
+          comparisonRule: step.comparisonRule ?? 90,
+        },
+        step.galleryExampleId,
+      )
+    : null;
 }
 
 function copyLessonPath(path: LessonPath): LessonPath {
   return {
     ...path,
-    steps: path.steps.map((step) => ({ ...step })),
+    steps: path.steps.map((step) => ({
+      ...step,
+      settings: step.settings ? { ...step.settings } : undefined,
+    })),
   };
 }
 

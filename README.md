@@ -30,9 +30,11 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Product-shaped Gallery examples section with four curated, apply-ready local setups, including wrapped-boundary and custom-seed cases.
 - Gallery filters for seed type, boundary mode, and classroom difficulty, with an empty state when no examples match.
 - Lesson paths that sequence existing gallery examples into named classroom investigations with estimated minutes and discussion prompts.
+- Copy and paste lesson path pack JSON locally, with validation for safe ids, prompts, rules, seeds, and boundary values; imported packs stay in the current browser session with no accounts or sync.
 - Pure deterministic engine exported from `src/automata.ts`.
 - Pure curated gallery metadata and apply helper exported from `src/gallery.ts`.
 - Pure lesson path metadata and safe step-application helpers exported from `src/lessonPaths.ts`.
+- Pure deterministic lesson path pack import/export helpers exported from `src/lessonPathPacks.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
@@ -74,6 +76,8 @@ Use Gallery examples to apply a complete curated setup. Filter the cards by seed
 
 Use Lesson paths when you want a short guided sequence instead of standalone cards. Each step applies an existing gallery setup, resets playback to the first row, and gives a discussion prompt for observation.
 
+Use Copy built-in lesson paths to copy deterministic lesson path pack JSON. Paste a local pack into the Lesson paths import box to add those paths for the current browser session only; malformed JSON, duplicate ids, unsafe text fields, and invalid rule/seed/boundary settings are rejected locally.
+
 Use Print teacher notes to prepare a local printable HTML sheet for the current setup. The notes include the active rule, seed, boundary mode, comparison summary, rule table, visible generated rows, selected preset/gallery/lesson context when available, and discussion prompts.
 
 ## Examples
@@ -91,6 +95,8 @@ Apply Sierpinski lattice for a clean Rule 90 center-seed fractal, Wrapped traffi
 Filter Gallery examples to find a beginner center-seed activity, an intermediate fixed-boundary random-seed activity, or an advanced custom-seed activity for a classroom sequence.
 
 Run Patterns from one spark for a 12-minute path from Rule 90 center seed to Rule 30 deterministic noise and Rule 110 custom lanes. Run Edges change the story for a 10-minute boundary-focused path from fixed edges to wrapped traffic.
+
+Copy the built-in lesson path pack, edit the JSON title and prompts in a local file, then paste it back as a session-only pack for a workshop variation.
 
 Switch `boundary=wrap` in a share URL to make the left and right edges read each other as neighbors.
 
@@ -145,7 +151,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path pack import/export validation, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -153,9 +159,9 @@ npm test -- --run
 
 ## Roadmap
 
-- Add import/export for local lesson path packs without accounts or cloud sync.
 - Add local annotation layers for marking notable generations during facilitation.
 - Add saved local comparison sets for recurring workshops.
+- Add local facilitator timing cues for lesson path steps.
 
 ## Contributing
 

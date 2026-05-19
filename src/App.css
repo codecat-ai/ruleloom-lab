@@ -204,7 +204,8 @@ textarea {
 }
 
 .export-status,
-.session-summary-status {
+.session-summary-status,
+.workshop-checklist-status {
   color: #3e4c59;
   flex-basis: 100%;
   font-size: 0.9rem;

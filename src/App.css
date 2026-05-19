@@ -103,6 +103,7 @@ h1 {
 .controls,
 .actions,
 .preset-explanations,
+.comparison-sets,
 .generation-annotations,
 .lesson-paths,
 .gallery-examples,
@@ -241,6 +242,7 @@ textarea {
   line-height: 1.4;
 }
 
+.comparison-sets,
 .gallery-examples {
   display: grid;
   gap: 12px;
@@ -251,6 +253,7 @@ textarea {
   gap: 12px;
 }
 
+.comparison-set-composer,
 .generation-annotation-composer,
 .generation-annotation-tools {
   align-items: end;
@@ -259,6 +262,7 @@ textarea {
   grid-template-columns: auto minmax(180px, 0.6fr) minmax(240px, 1fr) auto;
 }
 
+.comparison-set-tools,
 .generation-annotation-tools {
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
@@ -274,11 +278,16 @@ textarea {
   white-space: nowrap;
 }
 
+.comparison-set-composer textarea,
+.comparison-set-tools textarea,
 .generation-annotation-composer textarea,
 .generation-annotation-tools textarea {
   resize: vertical;
 }
 
+.comparison-set-composer button,
+.comparison-set-tools button,
+.comparison-set-list button,
 .generation-annotation-composer button,
 .generation-annotation-tools button,
 .generation-annotation-list button {
@@ -290,12 +299,16 @@ textarea {
   padding: 8px 12px;
 }
 
+.comparison-set-composer button:hover,
+.comparison-set-tools button:hover,
+.comparison-set-list button:hover,
 .generation-annotation-composer button:hover,
 .generation-annotation-tools button:hover,
 .generation-annotation-list button:hover {
   border-color: #5a6b3f;
 }
 
+.comparison-set-status,
 .generation-annotation-status {
   color: #3e4c59;
   font-size: 0.9rem;
@@ -305,6 +318,7 @@ textarea {
   min-height: 1.3em;
 }
 
+.comparison-set-list,
 .generation-annotation-list {
   display: grid;
   gap: 10px;
@@ -321,6 +335,7 @@ textarea {
   margin: 0;
 }
 
+.comparison-set-list article,
 .generation-annotation-list article {
   align-items: start;
   background: #ffffff;
@@ -332,12 +347,30 @@ textarea {
   padding: 12px;
 }
 
+.comparison-set-list strong,
 .generation-annotation-list strong {
   color: #1f2933;
   display: block;
   font-weight: 700;
 }
 
+.comparison-set-list span,
+.comparison-set-list small {
+  color: #52606d;
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.comparison-set-list small {
+  color: #5a6b3f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.comparison-set-list p,
 .generation-annotation-list p {
   color: #52606d;
   font-size: 0.9rem;
@@ -345,6 +378,14 @@ textarea {
   margin: 6px 0 0;
 }
 
+.comparison-set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: end;
+}
+
+.comparison-set-empty,
 .generation-annotation-empty {
   background: #ffffff;
   border: 1px dashed #b8c4ce;

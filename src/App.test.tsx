@@ -141,6 +141,43 @@ describe("App", () => {
     expect(html).toContain('id="comparisonSetsImport"');
     expect(html).toContain('data-action="import-comparison-sets"');
     expect(html).toContain("Import sets JSON");
+    expect(html).toContain('id="lessonPacingPreset"');
+    expect(html).toContain("Bell-ringer");
+    expect(html).toContain("Standard");
+    expect(html).toContain("Workshop");
+  });
+
+  it("renders the selected lesson pacing preset in visible guidance", () => {
+    const html = createAppHtml(
+      undefined,
+      "",
+      "",
+      {},
+      false,
+      [],
+      "",
+      "",
+      [],
+      "",
+      "",
+      "",
+      "",
+      [],
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "workshop",
+    );
+
+    expect(html).toContain('value="workshop" selected');
+    expect(html).toContain("Preset: Workshop");
+    expect(html).toContain("Total: 45 minutes");
+    expect(html).toContain("Longer 35-45 minute exploration");
+    expect(html).toContain("0-15 min");
+    expect(html).not.toContain("Total: 24 minutes");
   });
 
   it("renders saved comparison sets with apply/remove controls and status", () => {
@@ -467,7 +504,8 @@ describe("App", () => {
     expect(html).toContain('data-action="copy-timing-cues"');
     expect(html).toContain("Copy timing cues");
     expect(html).toContain('id="timingCueSheet-patterns-from-one-spark"');
-    expect(html).toContain("Ruleloom Lab timing cues");
+    expect(html).toContain("Ruleloom Lab pacing guide");
+    expect(html).toContain("Preset: Standard");
     expect(html).toContain("0-8 min · Explore");
     expect(html).toContain("8-16 min · Compare");
     expect(html).toContain("16-24 min · Reflect");
@@ -479,7 +517,7 @@ describe("App", () => {
       expect(html).toContain(`data-lesson-path="${path.id}"`);
       expect(html).toContain(`<strong>${path.title}</strong>`);
       expect(html).toContain(path.summary);
-      expect(html).toContain(`${path.estimatedMinutes} min`);
+      expect(html).toContain(`24 min · Standard · ${path.audience}`);
       expect(html).toContain(path.audience);
       path.steps.forEach((step, index) => {
         expect(html).toContain(`data-lesson-path-apply="${path.id}"`);
@@ -526,6 +564,27 @@ describe("App", () => {
     expect(writeText.mock.calls[0][0]).toContain(
       "1. 0-8 min | Explore | Step 1",
     );
+  });
+
+  it("copies selected pacing preset guidance without leaking default timing", async () => {
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
+
+    await copyTimingCueSheetForLessonPath(
+      getLessonPaths()[0],
+      writeText,
+      "workshop",
+    );
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain("Preset: Workshop");
+    expect(writeText.mock.calls[0][0]).toContain("Total: 45 minutes");
+    expect(writeText.mock.calls[0][0]).toContain(
+      "1. 0-15 min | Explore | Step 1",
+    );
+    expect(writeText.mock.calls[0][0]).not.toContain("Total: 24 minutes");
+    expect(writeText.mock.calls[0][0]).not.toContain("0-8 min");
   });
 
   it("copies a deterministic session summary for the current visible setup", async () => {
@@ -599,6 +658,7 @@ describe("App", () => {
       },
       ["How does the edge change the flow?"],
       writeText,
+      "bell-ringer",
     );
 
     expect(writeText).toHaveBeenCalledOnce();
@@ -608,7 +668,10 @@ describe("App", () => {
     expect(writeText.mock.calls[0][0]).toContain(
       "Title: Edges change the story",
     );
-    expect(writeText.mock.calls[0][0]).toContain("Duration: 24 minutes");
+    expect(writeText.mock.calls[0][0]).toContain("Duration: 12 minutes");
+    expect(writeText.mock.calls[0][0]).toContain(
+      "- Presets: Bell-ringer pacing",
+    );
     expect(writeText.mock.calls[0][0]).toContain("- Rules: Rule 184, Rule 226");
     expect(writeText.mock.calls[0][0]).toContain(
       "- Lesson paths: Edges change the story",
@@ -617,8 +680,9 @@ describe("App", () => {
       "- Comparison focus: Compare fixed and wrapped boundary behavior.",
     );
     expect(writeText.mock.calls[0][0]).toContain(
-      "- How does the edge change the flow?",
+      "1. 0-12 min | Bell-ringer pacing | Use the 12-minute Bell-ringer pacing preset for this visible lesson context.",
     );
+    expect(writeText.mock.calls[0][0]).not.toContain("Duration: 24 minutes");
   });
 
   it("copies local annotations as deterministic JSON", async () => {

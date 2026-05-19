@@ -409,6 +409,25 @@ textarea {
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
+.lesson-pacing-control {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+}
+
+.lesson-pacing-control p {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  color: #3e4c59;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+  min-height: 40px;
+  padding: 9px 12px;
+}
+
 .lesson-path-pack-tools button {
   background: #ffffff;
   border: 1px solid #cbd2d9;
@@ -773,6 +792,10 @@ textarea {
   }
 
   .lesson-path-pack-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-pacing-control {
     grid-template-columns: 1fr;
   }
 

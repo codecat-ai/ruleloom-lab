@@ -28,6 +28,14 @@ import {
   type LessonPath,
 } from "./lessonPaths";
 import { exportLessonPathPack, importLessonPathPack } from "./lessonPathPacks";
+import {
+  addGenerationAnnotation,
+  parseGenerationAnnotationsJson,
+  removeGenerationAnnotation,
+  serializeGenerationAnnotations,
+  sortGenerationAnnotations,
+  type GenerationAnnotation,
+} from "./generationAnnotations";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
 import { parseRuleloomRle } from "./rleImport";
@@ -144,6 +152,11 @@ export function createAppHtml(
   localLessonPaths: LessonPath[] = [],
   lessonPathPackImportText = "",
   lessonPathPackStatus = "",
+  generationAnnotations: GenerationAnnotation[] = [],
+  generationAnnotationLabel = "",
+  generationAnnotationNote = "",
+  generationAnnotationsImportText = "",
+  generationAnnotationStatus = "",
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
@@ -174,6 +187,9 @@ export function createAppHtml(
     seed: comparisonSeedFromSettings(appSettings),
     wrap: appSettings.boundaryMode === "wrap",
   });
+  const sortedGenerationAnnotations = sortGenerationAnnotations(
+    generationAnnotations,
+  );
 
   return `
     <main class="${resolveProjectorModeRootClassName(projectorMode)}">
@@ -264,6 +280,41 @@ export function createAppHtml(
         <button type="button" data-action="print-teacher-notes">Print teacher notes</button>
         <p class="export-status" aria-live="polite" aria-label="Export status">${escapeHtml(exportStatus)}</p>
         <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
+      </section>
+
+      <section class="generation-annotations" aria-label="Generation annotations">
+        <div class="section-heading">
+          <h2>Generation annotations</h2>
+          <p>Mark notable generations during facilitation. Annotations stay in this browser session unless you copy the JSON.</p>
+        </div>
+        <div class="generation-annotation-composer">
+          <p class="current-generation">Current visible generation: ${appSettings.generations}</p>
+          <label>
+            Label
+            <input id="annotationLabel" data-generation-annotation-field="label" type="text" maxlength="80" value="${escapeHtml(generationAnnotationLabel)}" />
+          </label>
+          <label>
+            Note
+            <textarea id="annotationNote" data-generation-annotation-field="note" rows="3">${escapeHtml(generationAnnotationNote)}</textarea>
+          </label>
+          <button type="button" data-action="add-generation-annotation">Add annotation</button>
+        </div>
+        <div class="generation-annotation-tools">
+          <button type="button" data-action="copy-generation-annotations">Copy annotations JSON</button>
+          <label>
+            Paste annotations JSON
+            <textarea id="generationAnnotationsImport" rows="4" spellcheck="false">${escapeHtml(generationAnnotationsImportText)}</textarea>
+          </label>
+          <button type="button" data-action="import-generation-annotations">Import annotations JSON</button>
+          <p class="generation-annotation-status" role="status" aria-live="polite">${escapeHtml(generationAnnotationStatus)}</p>
+        </div>
+        <div class="generation-annotation-list">
+          ${
+            sortedGenerationAnnotations.length > 0
+              ? renderGenerationAnnotationGroups(sortedGenerationAnnotations)
+              : `<p class="generation-annotation-empty" role="status">No generation annotations yet.</p>`
+          }
+        </div>
       </section>
 
       <section class="preset-explanations" aria-label="Preset explanations">
@@ -397,6 +448,11 @@ export function mountApp(root: HTMLElement): void {
   let lessonPathPackImportText = "";
   let localLessonPaths: LessonPath[] = [];
   let lessonPathPackStatus = "";
+  let generationAnnotations: GenerationAnnotation[] = [];
+  let generationAnnotationLabel = "";
+  let generationAnnotationNote = "";
+  let generationAnnotationsImportText = "";
+  let generationAnnotationStatus = "";
   let galleryFilters = normalizeGalleryFilters();
   let teacherNotesContext: TeacherNotesContext | undefined;
   let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
@@ -413,6 +469,11 @@ export function mountApp(root: HTMLElement): void {
       localLessonPaths,
       lessonPathPackImportText,
       lessonPathPackStatus,
+      generationAnnotations,
+      generationAnnotationLabel,
+      generationAnnotationNote,
+      generationAnnotationsImportText,
+      generationAnnotationStatus,
     );
     bindEvents();
   };
@@ -561,6 +622,9 @@ export function mountApp(root: HTMLElement): void {
         if (control.hasAttribute("data-gallery-filter")) {
           return;
         }
+        if (control.hasAttribute("data-generation-annotation-field")) {
+          return;
+        }
         control.addEventListener("change", updateFromControls);
       });
 
@@ -660,6 +724,107 @@ export function mountApp(root: HTMLElement): void {
       .querySelector<HTMLTextAreaElement>("#lessonPathPackImport")
       ?.addEventListener("input", (event) => {
         lessonPathPackImportText = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLInputElement>("#annotationLabel")
+      ?.addEventListener("input", (event) => {
+        generationAnnotationLabel = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLTextAreaElement>("#annotationNote")
+      ?.addEventListener("input", (event) => {
+        generationAnnotationNote = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLTextAreaElement>("#generationAnnotationsImport")
+      ?.addEventListener("input", (event) => {
+        generationAnnotationsImportText = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLButtonElement>(
+        "[data-action='add-generation-annotation']",
+      )
+      ?.addEventListener("click", () => {
+        generationAnnotationLabel =
+          root.querySelector<HTMLInputElement>("#annotationLabel")?.value ?? "";
+        generationAnnotationNote =
+          root.querySelector<HTMLTextAreaElement>("#annotationNote")?.value ??
+          "";
+        try {
+          generationAnnotations = addGenerationAnnotation(
+            generationAnnotations,
+            {
+              generation: visibleGenerations,
+              label: generationAnnotationLabel,
+              note: generationAnnotationNote,
+            },
+          );
+          generationAnnotationLabel = "";
+          generationAnnotationNote = "";
+          generationAnnotationStatus = `Added annotation for generation ${visibleGenerations}.`;
+        } catch (error) {
+          generationAnnotationStatus =
+            error instanceof Error
+              ? `Annotation failed: ${error.message}`
+              : "Annotation failed.";
+        }
+        render();
+      });
+
+    root
+      .querySelectorAll<HTMLButtonElement>(
+        "[data-generation-annotation-remove]",
+      )
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          generationAnnotations = removeGenerationAnnotation(
+            generationAnnotations,
+            button.dataset.generationAnnotationRemove ?? "",
+          );
+          generationAnnotationStatus = "Removed annotation.";
+          render();
+        });
+      });
+
+    root
+      .querySelector<HTMLButtonElement>(
+        "[data-action='copy-generation-annotations']",
+      )
+      ?.addEventListener("click", async () => {
+        await copyAnnotationsForSession(generationAnnotations, (json) => {
+          return navigator.clipboard?.writeText(json) ?? Promise.resolve();
+        });
+        generationAnnotationStatus = "Copied annotations JSON.";
+        render();
+      });
+
+    root
+      .querySelector<HTMLButtonElement>(
+        "[data-action='import-generation-annotations']",
+      )
+      ?.addEventListener("click", () => {
+        generationAnnotationsImportText =
+          root.querySelector<HTMLTextAreaElement>(
+            "#generationAnnotationsImport",
+          )?.value ?? "";
+        try {
+          const imported = importAnnotationsForSession(
+            generationAnnotationsImportText,
+          );
+          generationAnnotations = imported.annotations;
+          generationAnnotationStatus = imported.status;
+          generationAnnotationsImportText = "";
+        } catch (error) {
+          generationAnnotationStatus =
+            error instanceof Error
+              ? `Annotation import failed: ${error.message}`
+              : "Annotation import failed.";
+        }
+        render();
       });
 
     root
@@ -806,6 +971,25 @@ export async function copyLessonPathPackForPaths(
   await writeText(exportLessonPathPack(paths));
 }
 
+export async function copyAnnotationsForSession(
+  annotations: readonly GenerationAnnotation[],
+  writeText: (value: string) => Promise<void>,
+): Promise<void> {
+  await writeText(serializeGenerationAnnotations(annotations));
+}
+
+export function importAnnotationsForSession(json: string): {
+  annotations: GenerationAnnotation[];
+  status: string;
+} {
+  const annotations = parseGenerationAnnotationsJson(json);
+
+  return {
+    annotations,
+    status: `Imported ${annotations.length} local ${annotations.length === 1 ? "annotation" : "annotations"} for this browser session.`,
+  };
+}
+
 export function importLessonPathPackForSession(json: string): {
   lessonPaths: LessonPath[];
   status: string;
@@ -937,6 +1121,43 @@ function copyLessonPaths(paths: readonly LessonPath[]): LessonPath[] {
       settings: step.settings ? { ...step.settings } : undefined,
     })),
   }));
+}
+
+function renderGenerationAnnotationGroups(
+  annotations: readonly GenerationAnnotation[],
+): string {
+  const generations = new Map<number, GenerationAnnotation[]>();
+
+  for (const annotation of annotations) {
+    generations.set(annotation.generation, [
+      ...(generations.get(annotation.generation) ?? []),
+      annotation,
+    ]);
+  }
+
+  return [...generations]
+    .map(
+      ([
+        generation,
+        groupedAnnotations,
+      ]) => `<section class="generation-annotation-group" aria-label="Generation ${generation} annotations">
+            <h3>Generation ${generation}</h3>
+            ${groupedAnnotations
+              .map(
+                (
+                  annotation,
+                ) => `<article data-generation-annotation="${escapeHtml(annotation.id)}">
+              <div>
+                <strong>${escapeHtml(annotation.label)}</strong>
+                ${annotation.note ? `<p>${escapeHtml(annotation.note)}</p>` : ""}
+              </div>
+              <button type="button" data-generation-annotation-remove="${escapeHtml(annotation.id)}" aria-label="Remove annotation ${escapeHtml(annotation.label)}">Remove</button>
+            </article>`,
+              )
+              .join("")}
+          </section>`,
+    )
+    .join("");
 }
 
 export async function downloadPngForSettings(

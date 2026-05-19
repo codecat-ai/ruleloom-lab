@@ -103,6 +103,7 @@ h1 {
 .controls,
 .actions,
 .preset-explanations,
+.generation-annotations,
 .lesson-paths,
 .gallery-examples,
 .comparison-summary,
@@ -243,6 +244,114 @@ textarea {
 .gallery-examples {
   display: grid;
   gap: 12px;
+}
+
+.generation-annotations {
+  display: grid;
+  gap: 12px;
+}
+
+.generation-annotation-composer,
+.generation-annotation-tools {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(180px, 0.6fr) minmax(240px, 1fr) auto;
+}
+
+.generation-annotation-tools {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.current-generation {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  color: #3e4c59;
+  margin: 0;
+  min-height: 40px;
+  padding: 9px 12px;
+  white-space: nowrap;
+}
+
+.generation-annotation-composer textarea,
+.generation-annotation-tools textarea {
+  resize: vertical;
+}
+
+.generation-annotation-composer button,
+.generation-annotation-tools button,
+.generation-annotation-list button {
+  background: #ffffff;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.generation-annotation-composer button:hover,
+.generation-annotation-tools button:hover,
+.generation-annotation-list button:hover {
+  border-color: #5a6b3f;
+}
+
+.generation-annotation-status {
+  color: #3e4c59;
+  font-size: 0.9rem;
+  grid-column: 1 / -1;
+  line-height: 1.4;
+  margin: 0;
+  min-height: 1.3em;
+}
+
+.generation-annotation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.generation-annotation-group {
+  display: grid;
+  gap: 8px;
+}
+
+.generation-annotation-group h3 {
+  color: #3e4c59;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.generation-annotation-list article {
+  align-items: start;
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.generation-annotation-list strong {
+  color: #1f2933;
+  display: block;
+  font-weight: 700;
+}
+
+.generation-annotation-list p {
+  color: #52606d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 6px 0 0;
+}
+
+.generation-annotation-empty {
+  background: #ffffff;
+  border: 1px dashed #b8c4ce;
+  border-radius: 8px;
+  color: #52606d;
+  margin: 0;
+  padding: 16px;
 }
 
 .lesson-paths {
@@ -516,6 +625,7 @@ textarea {
 .projector-mode .rle-import,
 .projector-mode .comparison-summary,
 .projector-mode .preset-explanations,
+.projector-mode .generation-annotations,
 .projector-mode .lesson-paths,
 .projector-mode .gallery-examples,
 .projector-mode .rule-table,
@@ -587,5 +697,14 @@ textarea {
 
   .lesson-path-pack-tools {
     grid-template-columns: 1fr;
+  }
+
+  .generation-annotation-composer,
+  .generation-annotation-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .current-generation {
+    white-space: normal;
   }
 }

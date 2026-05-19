@@ -27,6 +27,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Download PNG action for local pattern snapshots of the currently visible generations.
 - Print teacher notes action for a deterministic, escaped, copy-friendly HTML notes sheet covering the current setup, comparison, rule table, selected preset/gallery/lesson context, generated rows, and discussion prompts.
 - Copy session summary action for a deterministic plain-text facilitator artifact that combines the current setup, comparison summary, selected preset/gallery/lesson context, prompts, generation annotations, and export handoff hints.
+- Copy workshop checklist action for a deterministic reusable run sheet that ties the current rules, selected preset or lesson context, comparison focus, facilitator notes, timing cues, checklist steps, and reflection prompts into one local artifact.
 - Curated presets for Rule 30, Rule 90, Rule 110, and Rule 184 with short learner-facing explanations.
 - Product-shaped Gallery examples section with four curated, apply-ready local setups, including wrapped-boundary and custom-seed cases.
 - Gallery filters for seed type, boundary mode, and classroom difficulty, with an empty state when no examples match.
@@ -43,6 +44,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Pure local generation annotation helpers exported from `src/generationAnnotations.ts`.
 - Pure saved comparison set validation, storage, import/export, and apply helpers exported from `src/comparisonSets.ts`.
 - Pure deterministic session summary formatter exported from `src/sessionSummaries.ts`.
+- Pure deterministic workshop checklist run-sheet formatter exported from `src/workshopChecklists.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
@@ -96,6 +98,8 @@ Use Print teacher notes to prepare a local printable HTML sheet for the current 
 
 Use Copy session summary when you need a lightweight facilitator handoff instead of a print sheet. The copied summary includes the current visible rule setup, comparison result, selected preset/gallery/lesson context when available, discussion prompts, local generation annotations, and reminders for PNG, SVG, plain-text, RLE, and teacher-note exports.
 
+Use Copy workshop checklist when you want a reusable local run sheet for the visible facilitation context. The copied sheet combines the active and comparison rules, selected preset or lesson path, comparison focus, facilitator notes, timing cues, setup checklist, and reflection prompts without uploading anything.
+
 ## Examples
 
 Restore a deterministic Rule 90 exploration from a URL query string:
@@ -127,6 +131,8 @@ Apply a lesson path step, change Compare with rule, then use Print teacher notes
 During a live run, step to a notable generation and add a Generation annotation such as `First asymmetry` or `Traffic jam forms`; copy the annotations JSON after the session to keep the marks without uploading anything.
 
 After a facilitated run, use Copy session summary to capture the visible board setup, the current comparison result, the selected context, annotations, and export options in one copyable text note.
+
+Before handing a session to another facilitator, use Copy workshop checklist to create a concise run sheet that connects the saved comparison setup, the selected lesson path, timing cue, teacher-note prompts, and reflection questions.
 
 Before a recurring workshop, save comparison sets such as `Traffic boundary contrast` or `Sierpinski warmup`. At the next session, apply the saved set to restore both rules, the board size, generation count, seed settings, and boundary mode in one click.
 
@@ -177,7 +183,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path timing cue schedules and plain-text sheets, lesson path pack import/export validation, generation annotation validation/import/export/sorting, saved comparison set validation/storage/import/export/apply behavior, session summary formatting, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path timing cue schedules and plain-text sheets, lesson path pack import/export validation, generation annotation validation/import/export/sorting, saved comparison set validation/storage/import/export/apply behavior, session summary formatting, workshop checklist run-sheet formatting, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -185,8 +191,8 @@ npm test -- --run
 
 ## Roadmap
 
-- Add local workshop checklists that tie comparison sets, lesson paths, and facilitator notes into a reusable run sheet.
 - Add optional local lesson path pacing presets for shorter bell-ringers and longer workshops.
+- Run a completion review to decide whether Ruleloom Lab should lower cadence from growth toward maintenance.
 
 ## Contributing
 

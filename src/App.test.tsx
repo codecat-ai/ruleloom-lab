@@ -8,6 +8,7 @@ import {
   copySessionSummaryForState,
   copySvgForSettings,
   copyTextForSettings,
+  copyWorkshopChecklistForState,
   createTeacherNotesForSettings,
   createAppHtml,
   downloadPngForSettings,
@@ -99,6 +100,9 @@ describe("App", () => {
     expect(html).toContain('data-action="copy-session-summary"');
     expect(html).toContain("Copy session summary");
     expect(html).toContain('aria-label="Session summary status"');
+    expect(html).toContain('data-action="copy-workshop-checklist"');
+    expect(html).toContain("Copy workshop checklist");
+    expect(html).toContain('aria-label="Workshop checklist status"');
     expect(html).toContain('id="rleImport"');
     expect(html).toContain('data-action="import-rle"');
     expect(html).toContain("Import RLE");
@@ -569,6 +573,51 @@ describe("App", () => {
     expect(writeText.mock.calls[0][0]).toContain("Title: Sierpinski lattice");
     expect(writeText.mock.calls[0][0]).toContain(
       "Prompt: What stays symmetrical?",
+    );
+  });
+
+  it("copies a deterministic workshop checklist for the current facilitation context", async () => {
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
+
+    await copyWorkshopChecklistForState(
+      {
+        rule: 184,
+        comparisonRule: 226,
+        width: 61,
+        generations: 96,
+        seedMode: "random",
+        boundaryMode: "wrap",
+        randomSeed: 184184,
+      },
+      24,
+      {
+        source: "lesson",
+        title: "Edges change the story",
+        description: "Compare fixed and wrapped boundary behavior.",
+      },
+      ["How does the edge change the flow?"],
+      writeText,
+    );
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain(
+      "# Ruleloom Lab workshop run sheet",
+    );
+    expect(writeText.mock.calls[0][0]).toContain(
+      "Title: Edges change the story",
+    );
+    expect(writeText.mock.calls[0][0]).toContain("Duration: 24 minutes");
+    expect(writeText.mock.calls[0][0]).toContain("- Rules: Rule 184, Rule 226");
+    expect(writeText.mock.calls[0][0]).toContain(
+      "- Lesson paths: Edges change the story",
+    );
+    expect(writeText.mock.calls[0][0]).toContain(
+      "- Comparison focus: Compare fixed and wrapped boundary behavior.",
+    );
+    expect(writeText.mock.calls[0][0]).toContain(
+      "- How does the edge change the flow?",
     );
   });
 

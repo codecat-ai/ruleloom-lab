@@ -73,6 +73,7 @@ import {
   formatSessionSummary,
   type SessionSummaryContext,
 } from "./sessionSummaries";
+import { formatWorkshopChecklist } from "./workshopChecklists";
 import {
   resolveProjectorModeButtonLabel,
   resolveProjectorModeRootClassName,
@@ -184,6 +185,7 @@ export function createAppHtml(
   comparisonSetsImportText = "",
   comparisonSetStatus = "",
   sessionSummaryStatus = "",
+  workshopChecklistStatus = "",
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
@@ -338,10 +340,12 @@ export function createAppHtml(
         <button type="button" data-action="copy-svg">Copy SVG</button>
         <button type="button" data-action="copy-rle">Copy RLE</button>
         <button type="button" data-action="copy-session-summary">Copy session summary</button>
+        <button type="button" data-action="copy-workshop-checklist">Copy workshop checklist</button>
         <button type="button" data-action="download-png">Download PNG</button>
         <button type="button" data-action="print-teacher-notes">Print teacher notes</button>
         <p class="export-status" aria-live="polite" aria-label="Export status">${escapeHtml(exportStatus)}</p>
         <p class="session-summary-status" role="status" aria-live="polite" aria-label="Session summary status">${escapeHtml(sessionSummaryStatus)}</p>
+        <p class="workshop-checklist-status" role="status" aria-live="polite" aria-label="Workshop checklist status">${escapeHtml(workshopChecklistStatus)}</p>
         <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
       </section>
 
@@ -502,6 +506,7 @@ export function mountApp(root: HTMLElement): void {
   let comparisonSetsImportText = "";
   let comparisonSetStatus = "";
   let sessionSummaryStatus = "";
+  let workshopChecklistStatus = "";
   let galleryFilters = normalizeGalleryFilters();
   let teacherNotesContext: TeacherNotesContext | undefined;
   let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
@@ -529,6 +534,7 @@ export function mountApp(root: HTMLElement): void {
       comparisonSetsImportText,
       comparisonSetStatus,
       sessionSummaryStatus,
+      workshopChecklistStatus,
     );
     bindEvents();
   };
@@ -790,6 +796,29 @@ export function mountApp(root: HTMLElement): void {
             error instanceof Error
               ? `Session summary copy failed: ${error.message}`
               : "Session summary copy failed.";
+        }
+        render();
+      });
+
+    root
+      .querySelector<HTMLButtonElement>(
+        "[data-action='copy-workshop-checklist']",
+      )
+      ?.addEventListener("click", async () => {
+        try {
+          await copyWorkshopChecklistForState(
+            settings,
+            visibleGenerations,
+            teacherNotesContext,
+            teacherNotesPrompts,
+            copyTextFromBrowser,
+          );
+          workshopChecklistStatus = "Copied workshop checklist.";
+        } catch (error) {
+          workshopChecklistStatus =
+            error instanceof Error
+              ? `Workshop checklist copy failed: ${error.message}`
+              : "Workshop checklist copy failed.";
         }
         render();
       });
@@ -1215,6 +1244,48 @@ export async function copySessionSummaryForState(
       context: toSessionSummaryContext(context),
       annotations,
       prompts,
+    }),
+  );
+}
+
+export async function copyWorkshopChecklistForState(
+  settings: AutomatonSettings & { comparisonRule?: number },
+  visibleGenerations: number,
+  context: TeacherNotesContext | undefined,
+  prompts: readonly string[],
+  writeText: (value: string) => Promise<void>,
+): Promise<void> {
+  const appSettings = normalizeAppSettings(settings);
+  const preset = PRESETS.find(
+    (candidate) => candidate.rule === appSettings.rule,
+  );
+  const title = context?.title ?? preset?.label ?? "Ruleloom Lab workshop";
+  const description =
+    context?.description ??
+    preset?.explanation ??
+    "Compare the active rule with the selected comparison rule.";
+
+  await writeText(
+    formatWorkshopChecklist({
+      title,
+      durationMinutes: visibleGenerations,
+      selectedRules: [
+        `Rule ${appSettings.rule}`,
+        `Rule ${appSettings.comparisonRule}`,
+      ],
+      selectedPresetNames:
+        context?.source === "preset" || !context ? [preset?.label] : [],
+      lessonPathNames: context?.source === "lesson" ? [context.title] : [],
+      comparisonFocus: description,
+      facilitatorNotes: prompts,
+      timingCues: [
+        {
+          label: "Visible run",
+          minutes: visibleGenerations,
+          prompt: `Use ${visibleGenerations} visible rows for comparison and discussion.`,
+        },
+      ],
+      reflectionPrompts: prompts,
     }),
   );
 }

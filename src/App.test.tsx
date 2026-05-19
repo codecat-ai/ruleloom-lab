@@ -5,6 +5,7 @@ import {
   copyComparisonSetsForStorage,
   copyLessonPathPackForPaths,
   copyTimingCueSheetForLessonPath,
+  copySessionSummaryForState,
   copySvgForSettings,
   copyTextForSettings,
   createTeacherNotesForSettings,
@@ -95,6 +96,9 @@ describe("App", () => {
     expect(html).toContain("Copy SVG");
     expect(html).toContain('data-action="copy-rle"');
     expect(html).toContain("Copy RLE");
+    expect(html).toContain('data-action="copy-session-summary"');
+    expect(html).toContain("Copy session summary");
+    expect(html).toContain('aria-label="Session summary status"');
     expect(html).toContain('id="rleImport"');
     expect(html).toContain('data-action="import-rle"');
     expect(html).toContain("Import RLE");
@@ -517,6 +521,54 @@ describe("App", () => {
     expect(writeText.mock.calls[0][0]).toContain("Total: 24 minutes");
     expect(writeText.mock.calls[0][0]).toContain(
       "1. 0-8 min | Explore | Step 1",
+    );
+  });
+
+  it("copies a deterministic session summary for the current visible setup", async () => {
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
+
+    await copySessionSummaryForState(
+      {
+        rule: 90,
+        comparisonRule: 30,
+        width: 15,
+        generations: 80,
+        seedMode: "center",
+        boundaryMode: "fixed",
+      },
+      3,
+      [
+        {
+          id: "mark",
+          generation: 2,
+          label: "First branch",
+          note: "Ask what changed.",
+          createdAt: "2026-05-19T00:00:00.000Z",
+        },
+      ],
+      {
+        source: "gallery",
+        title: "Sierpinski lattice",
+        description: "Center seed fractal.",
+      },
+      ["What stays symmetrical?"],
+      writeText,
+    );
+
+    expect(writeText).toHaveBeenCalledOnce();
+    expect(writeText.mock.calls[0][0]).toContain(
+      "Ruleloom Lab session summary",
+    );
+    expect(writeText.mock.calls[0][0]).toContain("Active rule: Rule 90");
+    expect(writeText.mock.calls[0][0]).toContain("Generations: 3 rows");
+    expect(writeText.mock.calls[0][0]).toContain(
+      "Generation 2: First branch - Ask what changed.",
+    );
+    expect(writeText.mock.calls[0][0]).toContain("Title: Sierpinski lattice");
+    expect(writeText.mock.calls[0][0]).toContain(
+      "Prompt: What stays symmetrical?",
     );
   });
 

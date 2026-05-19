@@ -70,6 +70,10 @@ import {
   type TeacherNotesPrintOptions,
 } from "./teacherNotes";
 import {
+  formatSessionSummary,
+  type SessionSummaryContext,
+} from "./sessionSummaries";
+import {
   resolveProjectorModeButtonLabel,
   resolveProjectorModeRootClassName,
   resolveProjectorModeStatusText,
@@ -179,6 +183,7 @@ export function createAppHtml(
   comparisonSetNote = "",
   comparisonSetsImportText = "",
   comparisonSetStatus = "",
+  sessionSummaryStatus = "",
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
@@ -332,9 +337,11 @@ export function createAppHtml(
         <button type="button" data-action="copy-text">Copy text</button>
         <button type="button" data-action="copy-svg">Copy SVG</button>
         <button type="button" data-action="copy-rle">Copy RLE</button>
+        <button type="button" data-action="copy-session-summary">Copy session summary</button>
         <button type="button" data-action="download-png">Download PNG</button>
         <button type="button" data-action="print-teacher-notes">Print teacher notes</button>
         <p class="export-status" aria-live="polite" aria-label="Export status">${escapeHtml(exportStatus)}</p>
+        <p class="session-summary-status" role="status" aria-live="polite" aria-label="Session summary status">${escapeHtml(sessionSummaryStatus)}</p>
         <p class="shortcut-copy"><strong>Keyboard shortcuts</strong> Space: Run/Pause · ArrowRight or .: Step · R: Reset · 1-4: Presets</p>
       </section>
 
@@ -494,6 +501,7 @@ export function mountApp(root: HTMLElement): void {
   let comparisonSetNote = "";
   let comparisonSetsImportText = "";
   let comparisonSetStatus = "";
+  let sessionSummaryStatus = "";
   let galleryFilters = normalizeGalleryFilters();
   let teacherNotesContext: TeacherNotesContext | undefined;
   let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
@@ -520,6 +528,7 @@ export function mountApp(root: HTMLElement): void {
       comparisonSetNote,
       comparisonSetsImportText,
       comparisonSetStatus,
+      sessionSummaryStatus,
     );
     bindEvents();
   };
@@ -761,6 +770,28 @@ export function mountApp(root: HTMLElement): void {
         await copyRleForSettings(settings, visibleGenerations, (rle) => {
           return navigator.clipboard?.writeText(rle) ?? Promise.resolve();
         });
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='copy-session-summary']")
+      ?.addEventListener("click", async () => {
+        try {
+          await copySessionSummaryForState(
+            settings,
+            visibleGenerations,
+            generationAnnotations,
+            teacherNotesContext,
+            teacherNotesPrompts,
+            copyTextFromBrowser,
+          );
+          sessionSummaryStatus = "Copied session summary.";
+        } catch (error) {
+          sessionSummaryStatus =
+            error instanceof Error
+              ? `Session summary copy failed: ${error.message}`
+              : "Session summary copy failed.";
+        }
+        render();
       });
 
     root
@@ -1153,6 +1184,41 @@ export async function copyRleForSettings(
   await writeText(rle);
 }
 
+export async function copySessionSummaryForState(
+  settings: AutomatonSettings & { comparisonRule?: number },
+  visibleGenerations: number,
+  annotations: readonly GenerationAnnotation[],
+  context: TeacherNotesContext | undefined,
+  prompts: readonly string[],
+  writeText: (value: string) => Promise<void>,
+): Promise<void> {
+  const appSettings = normalizeAppSettings(settings);
+  const visibleSettings = { ...appSettings, generations: visibleGenerations };
+  const comparison = compareRules({
+    primaryRule: visibleSettings.rule,
+    comparisonRule: appSettings.comparisonRule,
+    width: visibleSettings.width,
+    steps: visibleSettings.generations,
+    seed: comparisonSeedFromSettings(visibleSettings),
+    wrap: visibleSettings.boundaryMode === "wrap",
+  });
+
+  await writeText(
+    formatSessionSummary({
+      settings: visibleSettings,
+      comparison: {
+        primaryRule: visibleSettings.rule,
+        comparisonRule: appSettings.comparisonRule,
+        firstDifferingGeneration: comparison.firstDifferingGeneration,
+        totalDifferingCells: comparison.totalDifferingCells,
+      },
+      context: toSessionSummaryContext(context),
+      annotations,
+      prompts,
+    }),
+  );
+}
+
 export async function copyLessonPathPackForPaths(
   paths: readonly LessonPath[],
   writeText: (value: string) => Promise<void>,
@@ -1391,6 +1457,20 @@ function copyLessonPaths(paths: readonly LessonPath[]): LessonPath[] {
   }));
 }
 
+function toSessionSummaryContext(
+  context: TeacherNotesContext | undefined,
+): SessionSummaryContext | undefined {
+  if (!context) {
+    return undefined;
+  }
+
+  return {
+    source: context.source,
+    title: context.title,
+    summary: context.description,
+  };
+}
+
 function renderGenerationAnnotationGroups(
   annotations: readonly GenerationAnnotation[],
 ): string {
@@ -1552,6 +1632,29 @@ function downloadDataUrl(dataUrl: string, filename: string): void {
   document.body.append(link);
   link.click();
   link.remove();
+}
+
+async function copyTextFromBrowser(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.append(textarea);
+  textarea.select();
+
+  try {
+    if (!document.execCommand("copy")) {
+      throw new Error("Clipboard copy is unavailable in this browser.");
+    }
+  } finally {
+    textarea.remove();
+  }
 }
 
 function readSettings(root: HTMLElement, fallback: AppSettings): AppSettings {

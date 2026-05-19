@@ -59,11 +59,6 @@ import {
   type PngExportPayload,
 } from "./pngExport";
 import {
-  formatTimingCueSheet,
-  generateTimingCueSchedule,
-  resolveTimingCueTotalMinutes,
-} from "./timingCues";
-import {
   formatTeacherNotesHtml,
   printTeacherNotes,
   type TeacherNotesContext,
@@ -74,6 +69,13 @@ import {
   type SessionSummaryContext,
 } from "./sessionSummaries";
 import { formatWorkshopChecklist } from "./workshopChecklists";
+import {
+  applyPacingPresetToLessonPath,
+  formatPacingGuide,
+  getPacingPreset,
+  listPacingPresets,
+  type PacedLessonPathStep,
+} from "./pacingPresets";
 import {
   resolveProjectorModeButtonLabel,
   resolveProjectorModeRootClassName,
@@ -186,6 +188,7 @@ export function createAppHtml(
   comparisonSetStatus = "",
   sessionSummaryStatus = "",
   workshopChecklistStatus = "",
+  selectedPacingPresetId = "standard",
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
@@ -194,6 +197,8 @@ export function createAppHtml(
     ...listLessonPaths(),
     ...copyLessonPaths(localLessonPaths),
   ];
+  const pacingPreset =
+    getPacingPreset(selectedPacingPresetId) ?? getPacingPreset("standard");
   const rows = generateAutomaton(appSettings);
   const ruleTable = decodeRule(appSettings.rule);
   const boundaryLabel = boundaryModeLabel(appSettings.boundaryMode);
@@ -393,6 +398,23 @@ export function createAppHtml(
           <h2>Lesson paths</h2>
           <p>Run a short guided sequence of gallery examples or imported local packs with prompts for learners and facilitators.</p>
         </div>
+        <div class="lesson-pacing-control">
+          <label for="lessonPacingPreset">
+            Pacing preset
+            <select id="lessonPacingPreset" data-pacing-preset>
+              ${listPacingPresets()
+                .map((preset) =>
+                  selectOption(
+                    preset.id,
+                    preset.label,
+                    pacingPreset?.id ?? "standard",
+                  ),
+                )
+                .join("")}
+            </select>
+          </label>
+          <p>${escapeHtml(pacingPreset ? `${pacingPreset.label}: ${pacingPreset.totalMinutes} minutes · ${pacingPreset.audience}` : "")}</p>
+        </div>
         <div class="lesson-path-pack-tools">
           <button type="button" data-action="copy-lesson-path-pack">Copy built-in lesson paths</button>
           <label>
@@ -403,7 +425,7 @@ export function createAppHtml(
           <p class="lesson-path-pack-status" role="status" aria-live="polite">${escapeHtml(lessonPathPackStatus)}</p>
         </div>
         <div class="lesson-path-grid">
-          ${lessonPaths.map((path) => renderLessonPath(path)).join("")}
+          ${lessonPaths.map((path) => renderLessonPath(path, pacingPreset?.id ?? "standard")).join("")}
         </div>
       </section>
 
@@ -511,6 +533,7 @@ export function mountApp(root: HTMLElement): void {
   let teacherNotesContext: TeacherNotesContext | undefined;
   let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
   let projectorMode = false;
+  let selectedPacingPresetId = "standard";
   let timer: number | undefined;
 
   const render = () => {
@@ -535,6 +558,7 @@ export function mountApp(root: HTMLElement): void {
       comparisonSetStatus,
       sessionSummaryStatus,
       workshopChecklistStatus,
+      selectedPacingPresetId,
     );
     bindEvents();
   };
@@ -683,6 +707,9 @@ export function mountApp(root: HTMLElement): void {
         if (control.hasAttribute("data-gallery-filter")) {
           return;
         }
+        if (control.hasAttribute("data-pacing-preset")) {
+          return;
+        }
         if (control.hasAttribute("data-generation-annotation-field")) {
           return;
         }
@@ -690,6 +717,13 @@ export function mountApp(root: HTMLElement): void {
           return;
         }
         control.addEventListener("change", updateFromControls);
+      });
+
+    root
+      .querySelector<HTMLSelectElement>("[data-pacing-preset]")
+      ?.addEventListener("change", (event) => {
+        selectedPacingPresetId = event.currentTarget.value;
+        render();
       });
 
     root
@@ -812,6 +846,7 @@ export function mountApp(root: HTMLElement): void {
             teacherNotesContext,
             teacherNotesPrompts,
             copyTextFromBrowser,
+            selectedPacingPresetId,
           );
           workshopChecklistStatus = "Copied workshop checklist.";
         } catch (error) {
@@ -1078,9 +1113,13 @@ export function mountApp(root: HTMLElement): void {
             return;
           }
 
-          await copyTimingCueSheetForLessonPath(path, (text) => {
-            return navigator.clipboard?.writeText(text) ?? Promise.resolve();
-          });
+          await copyTimingCueSheetForLessonPath(
+            path,
+            (text) => {
+              return navigator.clipboard?.writeText(text) ?? Promise.resolve();
+            },
+            selectedPacingPresetId,
+          );
           lessonPathPackStatus = `Copied timing cues for "${path.title}".`;
           render();
         });
@@ -1254,11 +1293,14 @@ export async function copyWorkshopChecklistForState(
   context: TeacherNotesContext | undefined,
   prompts: readonly string[],
   writeText: (value: string) => Promise<void>,
+  pacingPresetId = "standard",
 ): Promise<void> {
   const appSettings = normalizeAppSettings(settings);
   const preset = PRESETS.find(
     (candidate) => candidate.rule === appSettings.rule,
   );
+  const pacingPreset = getPacingPreset(pacingPresetId);
+  const durationMinutes = pacingPreset?.totalMinutes ?? visibleGenerations;
   const title = context?.title ?? preset?.label ?? "Ruleloom Lab workshop";
   const description =
     context?.description ??
@@ -1268,21 +1310,25 @@ export async function copyWorkshopChecklistForState(
   await writeText(
     formatWorkshopChecklist({
       title,
-      durationMinutes: visibleGenerations,
+      durationMinutes,
       selectedRules: [
         `Rule ${appSettings.rule}`,
         `Rule ${appSettings.comparisonRule}`,
       ],
       selectedPresetNames:
-        context?.source === "preset" || !context ? [preset?.label] : [],
+        context?.source === "preset" || !context
+          ? [preset?.label, pacingPreset && `${pacingPreset.label} pacing`]
+          : [pacingPreset && `${pacingPreset.label} pacing`],
       lessonPathNames: context?.source === "lesson" ? [context.title] : [],
       comparisonFocus: description,
       facilitatorNotes: prompts,
       timingCues: [
         {
-          label: "Visible run",
-          minutes: visibleGenerations,
-          prompt: `Use ${visibleGenerations} visible rows for comparison and discussion.`,
+          label: pacingPreset ? `${pacingPreset.label} pacing` : "Visible run",
+          minutes: durationMinutes,
+          prompt: pacingPreset
+            ? `Use the ${pacingPreset.totalMinutes}-minute ${pacingPreset.label} pacing preset for this visible lesson context.`
+            : `Use ${visibleGenerations} visible rows for comparison and discussion.`,
         },
       ],
       reflectionPrompts: prompts,
@@ -1300,21 +1346,10 @@ export async function copyLessonPathPackForPaths(
 export async function copyTimingCueSheetForLessonPath(
   path: LessonPath,
   writeText: (value: string) => Promise<void>,
+  pacingPresetId = "standard",
 ): Promise<void> {
-  const totalMinutes = resolveTimingCueTotalMinutes();
-  const schedule = generateTimingCueSchedule({
-    lessonTitle: path.title,
-    steps: path.steps,
-    totalMinutes,
-  });
-
-  await writeText(
-    formatTimingCueSheet({
-      lessonTitle: path.title,
-      totalMinutes,
-      schedule,
-    }),
-  );
+  const pacing = applyPacingPresetToLessonPath(path, pacingPresetId);
+  await writeText(formatPacingGuide(pacing));
 }
 
 export async function copyAnnotationsForSession(
@@ -1605,28 +1640,19 @@ function renderComparisonSets(sets: readonly SavedComparisonSet[]): string {
     .join("");
 }
 
-function renderLessonPath(path: LessonPath): string {
-  const totalMinutes = resolveTimingCueTotalMinutes();
-  const schedule = generateTimingCueSchedule({
-    lessonTitle: path.title,
-    steps: path.steps,
-    totalMinutes,
-  });
-  const timingCueSheet = formatTimingCueSheet({
-    lessonTitle: path.title,
-    totalMinutes,
-    schedule,
-  });
+function renderLessonPath(path: LessonPath, pacingPresetId: string): string {
+  const pacing = applyPacingPresetToLessonPath(path, pacingPresetId);
+  const timingCueSheet = formatPacingGuide(pacing);
 
   return `<article data-lesson-path="${escapeHtml(path.id)}">
             <div class="lesson-path-header">
               <strong>${escapeHtml(path.title)}</strong>
-              <span>${path.estimatedMinutes} min · ${escapeHtml(path.audience)}</span>
+              <span>${pacing.totalMinutes} min · ${escapeHtml(pacing.preset.label)} · ${escapeHtml(path.audience)}</span>
             </div>
             <p>${escapeHtml(path.summary)}</p>
             <div class="timing-cues" aria-label="${escapeHtml(path.title)} timing cues">
               <div class="timing-cue-heading">
-                <strong>Timing cues</strong>
+                <strong>${escapeHtml(pacing.preset.label)} timing cues</strong>
                 <button type="button" data-action="copy-timing-cues" data-timing-cue-path="${escapeHtml(path.id)}">Copy timing cues</button>
               </div>
               <textarea id="timingCueSheet-${escapeHtml(path.id)}" rows="7" spellcheck="false" readonly>${escapeHtml(timingCueSheet)}</textarea>
@@ -1634,20 +1660,20 @@ function renderLessonPath(path: LessonPath): string {
             <ol>
               ${path.steps
                 .map((step, index) => {
-                  const cue = schedule[index];
+                  const cue = pacing.steps[index];
                   return `<li>
                 <span>${escapeHtml(step.prompt)}</span>
-                ${
-                  cue
-                    ? `<small>${cue.startMinute}-${cue.endMinute} min · ${escapeHtml(cue.phaseLabel)}</small>`
-                    : ""
-                }
+                ${cue ? `<small>${formatPacingStepSummary(cue)}</small>` : ""}
                 <button type="button" data-lesson-path-apply="${escapeHtml(path.id)}" data-lesson-step="${index}" aria-label="Apply ${escapeHtml(path.title)} step ${index + 1}">Apply step ${index + 1}</button>
               </li>`;
                 })
                 .join("")}
             </ol>
           </article>`;
+}
+
+function formatPacingStepSummary(cue: PacedLessonPathStep): string {
+  return `${cue.startMinute}-${cue.endMinute} min · ${escapeHtml(cue.phaseLabel)}`;
 }
 
 export async function downloadPngForSettings(

@@ -32,7 +32,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Product-shaped Gallery examples section with four curated, apply-ready local setups, including wrapped-boundary and custom-seed cases.
 - Gallery filters for seed type, boundary mode, and classroom difficulty, with an empty state when no examples match.
 - Lesson paths that sequence existing gallery examples into named classroom investigations with estimated minutes and discussion prompts.
-- Local facilitator timing cues for each lesson path, including deterministic minute ranges, phase labels, concise prompts, and a copyable plain-text cue sheet.
+- Optional local lesson path pacing presets for Bell-ringer, Standard, and Workshop facilitation, including deterministic minute ranges, phase labels, concise cues, and a copyable plain-text pacing guide.
 - Copy and paste lesson path pack JSON locally, with validation for safe ids, prompts, rules, seeds, and boundary values; imported packs stay in the current browser session with no accounts or sync.
 - Local generation annotations for marking notable rows during facilitation, with labels, optional notes, remove controls, and copy/paste JSON import for the current browser session.
 - Saved local comparison sets for recurring workshops, capturing title, optional note, both rules, width, generation count, seed mode/value, random seed, boundary mode, and schema version in browser storage with copy/paste JSON portability.
@@ -41,6 +41,7 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Pure lesson path metadata and safe step-application helpers exported from `src/lessonPaths.ts`.
 - Pure deterministic lesson path pack import/export helpers exported from `src/lessonPathPacks.ts`.
 - Pure deterministic lesson timing cue schedule and plain-text formatter helpers exported from `src/timingCues.ts`.
+- Pure deterministic lesson pacing preset metadata, apply, and formatting helpers exported from `src/pacingPresets.ts`.
 - Pure local generation annotation helpers exported from `src/generationAnnotations.ts`.
 - Pure saved comparison set validation, storage, import/export, and apply helpers exported from `src/comparisonSets.ts`.
 - Pure deterministic session summary formatter exported from `src/sessionSummaries.ts`.
@@ -86,7 +87,7 @@ Use Gallery examples to apply a complete curated setup. Filter the cards by seed
 
 Use Lesson paths when you want a short guided sequence instead of standalone cards. Each step applies an existing gallery setup, resets playback to the first row, and gives a discussion prompt for observation.
 
-Use the Timing cues shown on each lesson path to run a 24-minute mini lesson without a separate timer sheet. Each cue shows a minute range, phase label, and facilitator prompt; Copy timing cues copies a deterministic plain-text sheet for local handoff or printing.
+Use the Pacing preset control above Lesson paths to switch between a 12-minute Bell-ringer, 24-minute Standard path, and 45-minute Workshop exploration. The visible timing ranges and Copy timing cues artifact use the same selected preset, so local handoff notes match what facilitators saw on screen.
 
 Use Copy built-in lesson paths to copy deterministic lesson path pack JSON. Paste a local pack into the Lesson paths import box to add those paths for the current browser session only; malformed JSON, duplicate ids, unsafe text fields, and invalid rule/seed/boundary settings are rejected locally.
 
@@ -116,7 +117,7 @@ Filter Gallery examples to find a beginner center-seed activity, an intermediate
 
 Run Patterns from one spark for a 12-minute path from Rule 90 center seed to Rule 30 deterministic noise and Rule 110 custom lanes. Run Edges change the story for a 10-minute boundary-focused path from fixed edges to wrapped traffic.
 
-Copy the timing cues for Patterns from one spark to get a 24-minute mini lesson sheet with Explore, Compare, and Reflect ranges from 0-8, 8-16, and 16-24 minutes.
+Choose Workshop pacing, then copy the timing cues for Patterns from one spark to get a 45-minute guide with Explore, Compare, and Reflect ranges from 0-15, 15-30, and 30-45 minutes. Choose Bell-ringer for a 12-minute opening version with 0-4, 4-8, and 8-12 minute ranges.
 
 Copy the built-in lesson path pack, edit the JSON title and prompts in a local file, then paste it back as a session-only pack for a workshop variation.
 
@@ -183,7 +184,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path timing cue schedules and plain-text sheets, lesson path pack import/export validation, generation annotation validation/import/export/sorting, saved comparison set validation/storage/import/export/apply behavior, session summary formatting, workshop checklist run-sheet formatting, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path timing cue schedules and plain-text sheets, lesson path pacing presets and pacing-aware copied artifacts, lesson path pack import/export validation, generation annotation validation/import/export/sorting, saved comparison set validation/storage/import/export/apply behavior, session summary formatting, workshop checklist run-sheet formatting, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -191,8 +192,7 @@ npm test -- --run
 
 ## Roadmap
 
-- Add optional local lesson path pacing presets for shorter bell-ringers and longer workshops.
-- Run a completion review to decide whether Ruleloom Lab should lower cadence from growth toward maintenance.
+Ruleloom Lab is now on maintenance cadence. The next phase is small compatibility, accessibility, copy, and local artifact upkeep while keeping the classroom workflow local-first.
 
 ## Contributing
 

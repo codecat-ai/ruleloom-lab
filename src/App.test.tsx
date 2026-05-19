@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   copyRleForSettings,
   copyAnnotationsForSession,
+  copyComparisonSetsForStorage,
   copyLessonPathPackForPaths,
   copySvgForSettings,
   copyTextForSettings,
@@ -12,14 +13,35 @@ import {
   getLessonPaths,
   getPresetExplanations,
   importAnnotationsForSession,
+  importComparisonSetsForStorage,
   importLessonPathPackForSession,
+  listComparisonSetsForStorage,
   resolveGalleryApply,
   importRleForSettings,
   printTeacherNotesForSettings,
+  removeComparisonSetForStorage,
   resolveKeyboardShortcut,
   resolveLessonPathApply,
+  saveComparisonSetForStorage,
 } from "./App";
+import type { ComparisonSetStorage } from "./comparisonSets";
 import type { PngCanvasFactory } from "./pngExport";
+
+class FakeStorage implements ComparisonSetStorage {
+  private readonly items = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.items.get(key) ?? null;
+  }
+
+  removeItem(key: string): void {
+    this.items.delete(key);
+  }
+
+  setItem(key: string, value: string): void {
+    this.items.set(key, value);
+  }
+}
 
 describe("App", () => {
   it("returns preset explanation metadata in stable curated order", () => {
@@ -99,6 +121,83 @@ describe("App", () => {
     expect(html).toContain('id="generationAnnotationsImport"');
     expect(html).toContain('data-action="import-generation-annotations"');
     expect(html).toContain("Import annotations JSON");
+    expect(html).toContain('class="comparison-sets"');
+    expect(html).toContain("Saved comparison sets");
+    expect(html).toContain('id="comparisonSetTitle"');
+    expect(html).toContain('id="comparisonSetNote"');
+    expect(html).toContain('data-action="save-comparison-set"');
+    expect(html).toContain("Save comparison set");
+    expect(html).toContain('data-action="copy-comparison-sets"');
+    expect(html).toContain("Copy sets JSON");
+    expect(html).toContain('id="comparisonSetsImport"');
+    expect(html).toContain('data-action="import-comparison-sets"');
+    expect(html).toContain("Import sets JSON");
+  });
+
+  it("renders saved comparison sets with apply/remove controls and status", () => {
+    const html = createAppHtml(
+      undefined,
+      "",
+      "",
+      {},
+      false,
+      [],
+      "",
+      "",
+      [],
+      "",
+      "",
+      "",
+      "",
+      [
+        {
+          schemaVersion: 1,
+          id: "z-traffic",
+          title: "Wrapped traffic",
+          note: "Use after boundary discussion.",
+          primaryRule: 184,
+          comparisonRule: 226,
+          width: 61,
+          generations: 80,
+          seedMode: "random",
+          boundaryMode: "wrap",
+          randomSeed: 184,
+          customSeed: "",
+          createdAt: "2026-05-19T00:00:02.000Z",
+        },
+        {
+          schemaVersion: 1,
+          id: "a-sierpinski",
+          title: "Sierpinski warmup",
+          primaryRule: 90,
+          comparisonRule: 30,
+          width: 31,
+          generations: 24,
+          seedMode: "center",
+          boundaryMode: "fixed",
+          randomSeed: 1,
+          customSeed: "",
+          createdAt: "2026-05-19T00:00:01.000Z",
+        },
+      ],
+      "Draft workshop",
+      "Draft note",
+      "[]",
+      "Imported 2 saved comparison sets.",
+    );
+
+    expect(html).toContain('value="Draft workshop"');
+    expect(html).toContain(">Draft note</textarea>");
+    expect(html).toContain(">[]</textarea>");
+    expect(html.indexOf("Sierpinski warmup")).toBeLessThan(
+      html.indexOf("Wrapped traffic"),
+    );
+    expect(html).toContain("Rule 90 vs Rule 30");
+    expect(html).toContain("31 cells · 24 rows · Center · Fixed zero edges");
+    expect(html).toContain("Use after boundary discussion.");
+    expect(html).toContain('data-comparison-set-apply="a-sierpinski"');
+    expect(html).toContain('data-comparison-set-remove="z-traffic"');
+    expect(html).toContain("Imported 2 saved comparison sets.");
   });
 
   it("renders sorted local generation annotations with remove controls", () => {
@@ -452,6 +551,53 @@ describe("App", () => {
         },
       ],
       status: "Imported 1 local annotation for this browser session.",
+    });
+  });
+
+  it("saves, lists, removes, copies, and imports comparison sets through injected storage", async () => {
+    const storage = new FakeStorage();
+    const writeText = vi
+      .fn<[(value: string) => Promise<void>]>()
+      .mockResolvedValue(undefined);
+
+    const saved = saveComparisonSetForStorage(
+      storage,
+      {
+        rule: 30,
+        comparisonRule: 90,
+        width: 61,
+        generations: 80,
+        seedMode: "random",
+        boundaryMode: "wrap",
+        randomSeed: 3030,
+        customSeed: "",
+      },
+      {
+        title: "Noise workshop",
+        note: "Compare shared seeds.",
+      },
+      {
+        createId: () => "noise",
+        now: () => "2026-05-19T00:00:00.000Z",
+      },
+    );
+
+    expect(saved.status).toBe('Saved comparison set "Noise workshop".');
+    expect(listComparisonSetsForStorage(storage)).toHaveLength(1);
+
+    await copyComparisonSetsForStorage(storage, writeText);
+    expect(writeText).toHaveBeenCalledOnce();
+
+    const imported = importComparisonSetsForStorage(
+      new FakeStorage(),
+      writeText.mock.calls[0][0],
+    );
+    expect(imported.status).toBe("Imported 1 saved comparison set.");
+    expect(imported.comparisonSets[0].id).toBe("noise");
+
+    expect(removeComparisonSetForStorage(storage, "noise")).toEqual({
+      comparisonSets: [],
+      status: "Removed comparison set.",
     });
   });
 

@@ -32,11 +32,13 @@ Elementary cellular automata are easy to define but hard to understand from rule
 - Lesson paths that sequence existing gallery examples into named classroom investigations with estimated minutes and discussion prompts.
 - Copy and paste lesson path pack JSON locally, with validation for safe ids, prompts, rules, seeds, and boundary values; imported packs stay in the current browser session with no accounts or sync.
 - Local generation annotations for marking notable rows during facilitation, with labels, optional notes, remove controls, and copy/paste JSON import for the current browser session.
+- Saved local comparison sets for recurring workshops, capturing title, optional note, both rules, width, generation count, seed mode/value, random seed, boundary mode, and schema version in browser storage with copy/paste JSON portability.
 - Pure deterministic engine exported from `src/automata.ts`.
 - Pure curated gallery metadata and apply helper exported from `src/gallery.ts`.
 - Pure lesson path metadata and safe step-application helpers exported from `src/lessonPaths.ts`.
 - Pure deterministic lesson path pack import/export helpers exported from `src/lessonPathPacks.ts`.
 - Pure local generation annotation helpers exported from `src/generationAnnotations.ts`.
+- Pure saved comparison set validation, storage, import/export, and apply helpers exported from `src/comparisonSets.ts`.
 - Query-string import and export helpers in `src/share.ts`.
 - Deterministic plain-text pattern exporter in `src/textExport.ts`.
 - Deterministic SVG pattern exporter in `src/svgExport.ts`.
@@ -82,6 +84,8 @@ Use Copy built-in lesson paths to copy deterministic lesson path pack JSON. Past
 
 Use Generation annotations to mark the currently visible generation with a short label and optional note while facilitating. Copy annotations JSON to carry those local marks into another session, or paste/import annotation JSON; malformed schema versions, missing fields, invalid generations, and empty labels are rejected locally.
 
+Use Saved comparison sets to store recurring workshop setups in this browser. Each set records the current primary rule, comparison rule, width, generation count, seed mode, random seed, custom seed, boundary mode, title, optional note, and schema version. Apply a set to restore the comparison, remove it when it is no longer useful, or copy/paste sets JSON to move the local list between browsers without accounts, network calls, or uploads.
+
 Use Print teacher notes to prepare a local printable HTML sheet for the current setup. The notes include the active rule, seed, boundary mode, comparison summary, rule table, visible generated rows, selected preset/gallery/lesson context when available, and discussion prompts.
 
 ## Examples
@@ -111,6 +115,8 @@ Step to a partial run, then use Download PNG to capture only the visible rows as
 Apply a lesson path step, change Compare with rule, then use Print teacher notes to create a facilitator handout that records the exact visible rows and discussion prompts for that classroom moment.
 
 During a live run, step to a notable generation and add a Generation annotation such as `First asymmetry` or `Traffic jam forms`; copy the annotations JSON after the session to keep the marks without uploading anything.
+
+Before a recurring workshop, save comparison sets such as `Traffic boundary contrast` or `Sierpinski warmup`. At the next session, apply the saved set to restore both rules, the board size, generation count, seed settings, and boundary mode in one click.
 
 Switch on Projector mode after choosing a gallery example or lesson path step to present the enlarged board while keeping Step, Reset, Run, and preset controls close at hand.
 
@@ -143,6 +149,8 @@ Invalid numeric values are clamped to the supported ranges. Missing boundary set
 
 RLE import accepts Ruleloom's own deterministic text exports only. It decodes `b`, `o`, numeric run counts, `$` row separators, and the final `!` terminator, then applies the result as `seed=custom` with `boundary=fixed` unless the export metadata says `wrap`.
 
+Saved comparison sets are stored in browser storage under a versioned local key and can also be copied as JSON. Imports validate the schema version, safe ids, bounded title and note strings, rule ranges, width and generation ranges, seed mode/value, random seed, boundary mode, and legacy records that omit optional note or seed fields.
+
 ## Development
 
 ```bash
@@ -157,7 +165,7 @@ The app is intentionally local-first: no server, accounts, analytics, uploads, o
 
 ## Testing
 
-Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path pack import/export validation, generation annotation validation/import/export/sorting, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
+Ruleloom Lab uses Vitest for behavior-focused tests around rule decoding, fixed and wrapped boundary generation, deterministic seeds, curated gallery metadata, gallery filtering and apply behavior, lesson path metadata and step application, lesson path pack import/export validation, generation annotation validation/import/export/sorting, saved comparison set validation/storage/import/export/apply behavior, projector mode labels/status/classes, rule comparison summaries, teacher notes formatting and print helpers, URL query helpers, preset explanations, keyboard shortcuts, plain-text export, SVG export, RLE-like export and import, PNG export rendering and filenames, clipboard/download behavior, and rendered HTML structure.
 
 ```bash
 npm test -- --run
@@ -165,9 +173,9 @@ npm test -- --run
 
 ## Roadmap
 
-- Add saved local comparison sets for recurring workshops.
 - Add local facilitator timing cues for lesson path steps.
 - Add local facilitator session summaries that combine annotations, lesson context, and selected exports.
+- Add local workshop checklists that tie comparison sets, lesson paths, and facilitator notes into a reusable run sheet.
 
 ## Contributing
 

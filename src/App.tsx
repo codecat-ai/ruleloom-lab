@@ -36,6 +36,18 @@ import {
   sortGenerationAnnotations,
   type GenerationAnnotation,
 } from "./generationAnnotations";
+import {
+  createComparisonSetFromSettings,
+  exportComparisonSetsJson,
+  importComparisonSetsJson,
+  listComparisonSets,
+  removeComparisonSet,
+  saveComparisonSet,
+  savedComparisonSetToSettings,
+  type ComparisonSetCreateOptions,
+  type ComparisonSetStorage,
+  type SavedComparisonSet,
+} from "./comparisonSets";
 import { compareRules, type RuleComparisonSeed } from "./ruleComparison";
 import { exportPatternRle } from "./rleExport";
 import { parseRuleloomRle } from "./rleImport";
@@ -157,6 +169,11 @@ export function createAppHtml(
   generationAnnotationNote = "",
   generationAnnotationsImportText = "",
   generationAnnotationStatus = "",
+  comparisonSets: SavedComparisonSet[] = [],
+  comparisonSetTitle = "",
+  comparisonSetNote = "",
+  comparisonSetsImportText = "",
+  comparisonSetStatus = "",
 ): string {
   const appSettings = normalizeAppSettings(settings);
   const normalizedGalleryFilters = normalizeGalleryFilters(galleryFilters);
@@ -265,6 +282,40 @@ export function createAppHtml(
         <strong>Rule ${appSettings.rule} vs Rule ${appSettings.comparisonRule}</strong>
         <span>First differing generation: ${formatFirstDifference(comparison.firstDifferingGeneration)}</span>
         <span>Total differing cells: ${comparison.totalDifferingCells} ${comparison.totalDifferingCells === 1 ? "cell differs" : "cells differ"}</span>
+      </section>
+
+      <section class="comparison-sets" aria-label="Saved comparison sets">
+        <div class="section-heading">
+          <h2>Saved comparison sets</h2>
+          <p>Save local comparison setups for recurring workshops. Sets stay in this browser unless you copy the JSON.</p>
+        </div>
+        <div class="comparison-set-composer">
+          <label>
+            Title
+            <input id="comparisonSetTitle" data-comparison-set-field="title" type="text" maxlength="80" value="${escapeHtml(comparisonSetTitle)}" />
+          </label>
+          <label>
+            Note
+            <textarea id="comparisonSetNote" data-comparison-set-field="note" rows="3">${escapeHtml(comparisonSetNote)}</textarea>
+          </label>
+          <button type="button" data-action="save-comparison-set">Save comparison set</button>
+        </div>
+        <div class="comparison-set-tools">
+          <button type="button" data-action="copy-comparison-sets">Copy sets JSON</button>
+          <label>
+            Paste sets JSON
+            <textarea id="comparisonSetsImport" rows="4" spellcheck="false">${escapeHtml(comparisonSetsImportText)}</textarea>
+          </label>
+          <button type="button" data-action="import-comparison-sets">Import sets JSON</button>
+          <p class="comparison-set-status" role="status" aria-live="polite">${escapeHtml(comparisonSetStatus)}</p>
+        </div>
+        <div class="comparison-set-list">
+          ${
+            comparisonSets.length > 0
+              ? renderComparisonSets(comparisonSets)
+              : `<p class="comparison-set-empty" role="status">No saved comparison sets yet.</p>`
+          }
+        </div>
       </section>
 
       <section class="actions" aria-label="Run controls">
@@ -453,6 +504,11 @@ export function mountApp(root: HTMLElement): void {
   let generationAnnotationNote = "";
   let generationAnnotationsImportText = "";
   let generationAnnotationStatus = "";
+  let comparisonSets = readComparisonSetsFromBrowserStorage();
+  let comparisonSetTitle = "";
+  let comparisonSetNote = "";
+  let comparisonSetsImportText = "";
+  let comparisonSetStatus = "";
   let galleryFilters = normalizeGalleryFilters();
   let teacherNotesContext: TeacherNotesContext | undefined;
   let teacherNotesPrompts = [...DEFAULT_TEACHER_NOTE_PROMPTS];
@@ -474,6 +530,11 @@ export function mountApp(root: HTMLElement): void {
       generationAnnotationNote,
       generationAnnotationsImportText,
       generationAnnotationStatus,
+      comparisonSets,
+      comparisonSetTitle,
+      comparisonSetNote,
+      comparisonSetsImportText,
+      comparisonSetStatus,
     );
     bindEvents();
   };
@@ -625,6 +686,9 @@ export function mountApp(root: HTMLElement): void {
         if (control.hasAttribute("data-generation-annotation-field")) {
           return;
         }
+        if (control.hasAttribute("data-comparison-set-field")) {
+          return;
+        }
         control.addEventListener("change", updateFromControls);
       });
 
@@ -742,6 +806,125 @@ export function mountApp(root: HTMLElement): void {
       .querySelector<HTMLTextAreaElement>("#generationAnnotationsImport")
       ?.addEventListener("input", (event) => {
         generationAnnotationsImportText = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLInputElement>("#comparisonSetTitle")
+      ?.addEventListener("input", (event) => {
+        comparisonSetTitle = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLTextAreaElement>("#comparisonSetNote")
+      ?.addEventListener("input", (event) => {
+        comparisonSetNote = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLTextAreaElement>("#comparisonSetsImport")
+      ?.addEventListener("input", (event) => {
+        comparisonSetsImportText = event.currentTarget.value;
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='save-comparison-set']")
+      ?.addEventListener("click", () => {
+        comparisonSetTitle =
+          root.querySelector<HTMLInputElement>("#comparisonSetTitle")?.value ??
+          "";
+        comparisonSetNote =
+          root.querySelector<HTMLTextAreaElement>("#comparisonSetNote")
+            ?.value ?? "";
+        try {
+          const saved = saveComparisonSetForStorage(
+            globalThis.localStorage,
+            settings,
+            {
+              title: comparisonSetTitle,
+              note: comparisonSetNote,
+            },
+          );
+          comparisonSets = saved.comparisonSets;
+          comparisonSetStatus = saved.status;
+          comparisonSetTitle = "";
+          comparisonSetNote = "";
+        } catch (error) {
+          comparisonSetStatus =
+            error instanceof Error
+              ? `Comparison set save failed: ${error.message}`
+              : "Comparison set save failed.";
+        }
+        render();
+      });
+
+    root
+      .querySelectorAll<HTMLButtonElement>("[data-comparison-set-apply]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const set = comparisonSets.find(
+            (candidate) => candidate.id === button.dataset.comparisonSetApply,
+          );
+
+          if (!set) {
+            return;
+          }
+
+          stop();
+          settings = normalizeAppSettings(savedComparisonSetToSettings(set));
+          visibleGenerations = settings.generations;
+          comparisonSetStatus = `Applied comparison set "${set.title}".`;
+          history.replaceState(null, "", serializeSettingsQuery(settings));
+          render();
+        });
+      });
+
+    root
+      .querySelectorAll<HTMLButtonElement>("[data-comparison-set-remove]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const removed = removeComparisonSetForStorage(
+            globalThis.localStorage,
+            button.dataset.comparisonSetRemove ?? "",
+          );
+          comparisonSets = removed.comparisonSets;
+          comparisonSetStatus = removed.status;
+          render();
+        });
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-action='copy-comparison-sets']")
+      ?.addEventListener("click", async () => {
+        await copyComparisonSetsForStorage(globalThis.localStorage, (json) => {
+          return navigator.clipboard?.writeText(json) ?? Promise.resolve();
+        });
+        comparisonSetStatus = "Copied comparison sets JSON.";
+        render();
+      });
+
+    root
+      .querySelector<HTMLButtonElement>(
+        "[data-action='import-comparison-sets']",
+      )
+      ?.addEventListener("click", () => {
+        comparisonSetsImportText =
+          root.querySelector<HTMLTextAreaElement>("#comparisonSetsImport")
+            ?.value ?? "";
+        try {
+          const imported = importComparisonSetsForStorage(
+            globalThis.localStorage,
+            comparisonSetsImportText,
+          );
+          comparisonSets = imported.comparisonSets;
+          comparisonSetStatus = imported.status;
+          comparisonSetsImportText = "";
+        } catch (error) {
+          comparisonSetStatus =
+            error instanceof Error
+              ? `Comparison set import failed: ${error.message}`
+              : "Comparison set import failed.";
+        }
+        render();
       });
 
     root
@@ -990,6 +1173,65 @@ export function importAnnotationsForSession(json: string): {
   };
 }
 
+export function listComparisonSetsForStorage(
+  storage: ComparisonSetStorage,
+): SavedComparisonSet[] {
+  return listComparisonSets(storage);
+}
+
+export function saveComparisonSetForStorage(
+  storage: ComparisonSetStorage,
+  settings: AppSettings,
+  draft: { title: string; note?: string },
+  options?: ComparisonSetCreateOptions,
+): {
+  comparisonSets: SavedComparisonSet[];
+  status: string;
+} {
+  const set = createComparisonSetFromSettings(settings, draft, options);
+  const comparisonSets = saveComparisonSet(storage, set);
+
+  return {
+    comparisonSets,
+    status: `Saved comparison set "${set.title}".`,
+  };
+}
+
+export function removeComparisonSetForStorage(
+  storage: ComparisonSetStorage,
+  id: string,
+): {
+  comparisonSets: SavedComparisonSet[];
+  status: string;
+} {
+  return {
+    comparisonSets: removeComparisonSet(storage, id),
+    status: "Removed comparison set.",
+  };
+}
+
+export async function copyComparisonSetsForStorage(
+  storage: ComparisonSetStorage,
+  writeText: (value: string) => Promise<void>,
+): Promise<void> {
+  await writeText(exportComparisonSetsJson(storage));
+}
+
+export function importComparisonSetsForStorage(
+  storage: ComparisonSetStorage,
+  json: string,
+): {
+  comparisonSets: SavedComparisonSet[];
+  status: string;
+} {
+  const comparisonSets = importComparisonSetsJson(storage, json);
+
+  return {
+    comparisonSets,
+    status: `Imported ${comparisonSets.length} saved comparison ${comparisonSets.length === 1 ? "set" : "sets"}.`,
+  };
+}
+
 export function importLessonPathPackForSession(json: string): {
   lessonPaths: LessonPath[];
   status: string;
@@ -1160,6 +1402,32 @@ function renderGenerationAnnotationGroups(
     .join("");
 }
 
+function renderComparisonSets(sets: readonly SavedComparisonSet[]): string {
+  return [...sets]
+    .sort((left, right) => {
+      return (
+        left.title.localeCompare(right.title) ||
+        left.createdAt.localeCompare(right.createdAt) ||
+        left.id.localeCompare(right.id)
+      );
+    })
+    .map(
+      (set) => `<article data-comparison-set="${escapeHtml(set.id)}">
+              <div>
+                <strong>${escapeHtml(set.title)}</strong>
+                <span>Rule ${set.primaryRule} vs Rule ${set.comparisonRule}</span>
+                <small>${set.width} cells · ${set.generations} rows · ${seedModeLabel(set.seedMode)} · ${boundaryModeLabel(set.boundaryMode)}</small>
+                ${set.note ? `<p>${escapeHtml(set.note)}</p>` : ""}
+              </div>
+              <div class="comparison-set-actions">
+                <button type="button" data-comparison-set-apply="${escapeHtml(set.id)}" aria-label="Apply comparison set ${escapeHtml(set.title)}">Apply</button>
+                <button type="button" data-comparison-set-remove="${escapeHtml(set.id)}" aria-label="Remove comparison set ${escapeHtml(set.title)}">Remove</button>
+              </div>
+            </article>`,
+    )
+    .join("");
+}
+
 export async function downloadPngForSettings(
   settings: AutomatonSettings,
   visibleGenerations: number,
@@ -1256,6 +1524,18 @@ function boundaryModeLabel(
   return boundaryMode === "wrap" ? "Wrapped edges" : "Fixed zero edges";
 }
 
+function seedModeLabel(seedMode: AutomatonSettings["seedMode"]): string {
+  if (seedMode === "random") {
+    return "Deterministic random";
+  }
+
+  if (seedMode === "custom") {
+    return "Custom bits";
+  }
+
+  return "Center";
+}
+
 function galleryDifficultyLabel(difficulty: GalleryDifficulty): string {
   if (difficulty === "beginner") {
     return "Beginner";
@@ -1312,6 +1592,14 @@ function comparisonSeedFromSettings(
     randomSeed: settings.randomSeed,
     customSeed: settings.customSeed,
   };
+}
+
+function readComparisonSetsFromBrowserStorage(): SavedComparisonSet[] {
+  try {
+    return listComparisonSets(globalThis.localStorage);
+  } catch {
+    return [];
+  }
 }
 
 function formatFirstDifference(
